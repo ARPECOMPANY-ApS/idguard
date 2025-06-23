@@ -3,7 +3,7 @@
  * Plugin Name: IDguard
  * Plugin URI: https://idguard.dk
  * Description: Foretag automatisk alderstjek med MitID ved betaling på WooCommerce-webshops
- * Version: 2.1.1.3
+ * Version: 2.1.1.4
  * Author: IDguard
  * Author URI: https://idguard.dk
  * Text Domain: idguard
@@ -204,7 +204,8 @@ function idguard_is_authorized_domain() {
     $transient_key = 'idguard_domain_auth_' . md5($domain);
     $cached = get_transient($transient_key);
     if ($cached !== false) return $cached === '1';
-    $response = wp_remote_get('https://assets.idguard.dk/api/authorize?domain=' . urlencode($domain), ['timeout' => 8]);
+    // Fjern domain-param: endpoint skal selv detektere domænet
+    $response = wp_remote_get('https://assets.idguard.dk/api/authorize', ['timeout' => 8]);
     $authorized = false;
     if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200) {
         $body = wp_remote_retrieve_body($response);

@@ -3,7 +3,7 @@
  * Plugin Name: IDguard
  * Plugin URI: https://idguard.dk
  * Description: Foretag automatisk alderstjek med MitID ved betaling på WooCommerce-webshops
- * Version: 2.1.1.1
+ * Version: 2.1.1.2
  * Author: IDguard
  * Author URI: https://idguard.dk
  * Text Domain: idguard
@@ -269,127 +269,196 @@ function idguard_popup_page() {
     $popup_verify_button_text_color = get_option('idguard_popup_verify_button_text_color', '#ffffff');
     $popup_cancel_button_color = get_option('idguard_popup_cancel_button_color', '#f44336');
     $popup_cancel_button_text_color = get_option('idguard_popup_cancel_button_text_color', '#ffffff');
-	
-	$cancel_redirect_option = get_option('idguard_cancel_redirect_option', 'cart');
-	$custom_cancel_url = get_option('idguard_custom_cancel_url', '');
-
-    // Get existing texts
+    $cancel_redirect_option = get_option('idguard_cancel_redirect_option', 'cart');
+    $custom_cancel_url = get_option('idguard_custom_cancel_url', '');
     $popup_title = get_option('idguard_popup_title', 'Din ordre indeholder aldersbegrænsede varer');
     $popup_message = get_option('idguard_popup_message', 'Den danske lovgivning kræver at vi kontrollerer din alder med MitID inden du kan købe aldersbegrænsede varer.');
     $popup_button_text = get_option('idguard_popup_button_text', 'Fortsæt købet');
     $popup_cancel_button_text = get_option('idguard_popup_cancel_button_text', 'Gå tilbage');
     ?>
+    <style>
+        .idguard-onboarding {
+            background: #e6f7ff;
+            border-left: 5px solid #0091ea;
+            padding: 18px 20px;
+            margin-bottom: 25px;
+            border-radius: 6px;
+        }
+        .idguard-section {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            padding: 20px 25px 10px 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .idguard-section h2 {
+            margin-top: 0;
+            color: #004cb8;
+        }
+        .idguard-helper {
+            color: #666;
+            font-size: 0.97em;
+            margin-bottom: 10px;
+        }
+        .idguard-label {
+            font-weight: 600;
+        }
+        .idguard-preview-btn {
+            font-size: 1.1em;
+            padding: 0.7em 2em;
+            background: #004cb8;
+            color: #fff;
+            border-radius: 5px;
+            border: none;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .idguard-preview-btn:hover {
+            background: #003a8c;
+        }
+        #idguard-popup-preview {
+            z-index: 99999;
+        }
+    </style>
     <div class="wrap">
-        <h1><?php _e('IDguard Popup Indstillinger', 'idguard'); ?></h1>
-        <div style="margin-bottom:20px;">
-            <button type="button" class="button button-secondary" id="idguard-preview-popup">
-                <?php _e('Forhåndsvis popup', 'idguard'); ?>
-            </button>
+        <h1><span style="color:#004cb8;">⛨</span> <?php _e('IDguard Popup Indstillinger', 'idguard'); ?></h1>
+        <div class="idguard-onboarding">
+            <strong><?php _e('Sådan kommer du i gang:', 'idguard'); ?></strong>
+            <ol style="margin-top:8px;">
+                <li><?php _e('Tilpas popup-udseende og tekster nedenfor.', 'idguard'); ?></li>
+                <li><?php _e('Klik på <b>Forhåndsvis popup</b> for at se, hvordan det ser ud for dine kunder.', 'idguard'); ?></li>
+                <li><?php _e('Gem indstillingerne nederst på siden.', 'idguard'); ?></li>
+                <li><?php _e('Test i din webshop for at sikre korrekt integration.', 'idguard'); ?></li>
+            </ol>
+            <div style="margin-top:10px;">
+                <a href="<?php echo admin_url('admin.php?page=idguard_documentation'); ?>" class="button-secondary" style="margin-right:10px;">📖 <?php _e('Se dokumentation', 'idguard'); ?></a>
+                <a href="mailto:kontakt@arpecompany.dk" class="button-secondary">📬 <?php _e('Kontakt support', 'idguard'); ?></a>
+            </div>
         </div>
+        <button type="button" class="idguard-preview-btn" id="idguard-preview-popup">
+            <?php _e('Forhåndsvis popup', 'idguard'); ?>
+        </button>
         <form method="post" action="options.php">
             <?php
             settings_fields('idguard_popup_settings');
             do_settings_sections('idguard_popup_settings');
             ?>
-            <h2><?php _e('Udseende af popup', 'idguard'); ?></h2>
-            <p><?php _e('Tilpas farver og knapper, så de matcher din butik.', 'idguard'); ?></p>
-            <table class="form-table">
-                <tr valign="top">
-                    <th scope="row"><?php _e('Tekstfarve', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_text_color" value="<?php echo esc_attr($popup_text_color); ?>" class="my-color-field" data-default-color="#000000" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row"><?php _e('Baggrundsfarve', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_background_color" value="<?php echo esc_attr($popup_background_color); ?>" class="my-color-field" data-default-color="#ffffff" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row"><?php _e('Bekræft-knap farve', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_verify_button_color" value="<?php echo esc_attr($popup_verify_button_color); ?>" class="my-color-field" data-default-color="#004cb8" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row"><?php _e('Bekræft-knap tekstfarve', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_verify_button_text_color" value="<?php echo esc_attr($popup_verify_button_text_color); ?>" class="my-color-field" data-default-color="#ffffff" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row"><?php _e('Annuller-knap farve', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_cancel_button_color" value="<?php echo esc_attr($popup_cancel_button_color); ?>" class="my-color-field" data-default-color="#f44336" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row"><?php _e('Annuller-knap tekstfarve', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_cancel_button_text_color" value="<?php echo esc_attr($popup_cancel_button_text_color); ?>" class="my-color-field" data-default-color="#ffffff" /></td>
-                </tr>
-            </table>
-            <h2><?php _e('Popup tekstindstillinger', 'idguard'); ?></h2>
-            <p><?php _e('Rediger teksterne, der vises i popup-vinduet.', 'idguard'); ?></p>
-            <table class="form-table">
-                <tr valign="top">
-                    <th scope="row"><?php _e('Popup titel', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_title" value="<?php echo esc_attr($popup_title); ?>" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row"><?php _e('Popup besked', 'idguard'); ?></th>
-                    <td><textarea name="idguard_popup_message" rows="5" cols="50"><?php echo esc_textarea($popup_message); ?></textarea></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row"><?php _e('Bekræft-knap tekst', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_button_text" value="<?php echo esc_attr($popup_button_text); ?>" /></td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row"><?php _e('Annuller-knap tekst', 'idguard'); ?></th>
-                    <td><input type="text" name="idguard_popup_cancel_button_text" value="<?php echo esc_attr($popup_cancel_button_text); ?>" /></td>
-                </tr>
-            </table>
-            <h2><?php _e('Indstillinger for annuller-knap redirect', 'idguard'); ?></h2>
-            <table class="form-table">
-                <tr valign="top">
-                    <th scope="row"><?php _e('Redirect til', 'idguard'); ?></th>
-                    <td>
-                        <select name="idguard_cancel_redirect_option" id="idguard_cancel_redirect_option">
-                            <option value="home" <?php selected($cancel_redirect_option, 'home'); ?>><?php _e('Forside', 'idguard'); ?></option>
-                            <option value="cart" <?php selected($cancel_redirect_option, 'cart'); ?>><?php _e('Kurv', 'idguard'); ?></option>
-                            <option value="custom" <?php selected($cancel_redirect_option, 'custom'); ?>><?php _e('Egen URL', 'idguard'); ?></option>
-                        </select>
-                    </td>
-                </tr>
-                <tr valign="top" id="custom_url_row" style="<?php echo ($cancel_redirect_option === 'custom') ? '' : 'display: none;'; ?>">
-                    <th scope="row"><?php _e('Egen URL', 'idguard'); ?></th>
-                    <td>
-                        <input type="text" name="idguard_custom_cancel_url" value="<?php echo esc_attr($custom_cancel_url); ?>" />
-                        <p class="description"><?php _e('Indtast en relativ URL (fx /shop eller /kontakt) eller en absolut URL (fx https://eksempel.dk/shop)', 'idguard'); ?></p>
-                    </td>
-                </tr>
-            </table>
-            <?php submit_button(); ?>
+            <div class="idguard-section">
+                <h2>🎨 <?php _e('Udseende af popup', 'idguard'); ?></h2>
+                <div class="idguard-helper"><?php _e('Tilpas farver og knapper, så de matcher din butiks design og branding.', 'idguard'); ?></div>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Tekstfarve', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_text_color" name="idguard_popup_text_color" value="<?php echo esc_attr($popup_text_color); ?>" class="my-color-field" data-default-color="#000000" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Baggrundsfarve', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_background_color" name="idguard_popup_background_color" value="<?php echo esc_attr($popup_background_color); ?>" class="my-color-field" data-default-color="#ffffff" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Bekræft-knap farve', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_verify_button_color" name="idguard_popup_verify_button_color" value="<?php echo esc_attr($popup_verify_button_color); ?>" class="my-color-field" data-default-color="#004cb8" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Bekræft-knap tekstfarve', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_verify_button_text_color" name="idguard_popup_verify_button_text_color" value="<?php echo esc_attr($popup_verify_button_text_color); ?>" class="my-color-field" data-default-color="#ffffff" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Annuller-knap farve', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_cancel_button_color" name="idguard_popup_cancel_button_color" value="<?php echo esc_attr($popup_cancel_button_color); ?>" class="my-color-field" data-default-color="#f44336" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Annuller-knap tekstfarve', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_cancel_button_text_color" name="idguard_popup_cancel_button_text_color" value="<?php echo esc_attr($popup_cancel_button_text_color); ?>" class="my-color-field" data-default-color="#ffffff" /></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="idguard-section">
+                <h2>📝 <?php _e('Popup tekstindstillinger', 'idguard'); ?></h2>
+                <div class="idguard-helper"><?php _e('Rediger teksterne, der vises i popup-vinduet. Gør det tydeligt for kunden, hvorfor aldersbekræftelse er nødvendig.', 'idguard'); ?></div>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Popup titel', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_title" name="idguard_popup_title" value="<?php echo esc_attr($popup_title); ?>" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Popup besked', 'idguard'); ?></th>
+                        <td><textarea id="idguard_popup_message" name="idguard_popup_message" rows="5" cols="50"><?php echo esc_textarea($popup_message); ?></textarea></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Bekræft-knap tekst', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_button_text" name="idguard_popup_button_text" value="<?php echo esc_attr($popup_button_text); ?>" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Annuller-knap tekst', 'idguard'); ?></th>
+                        <td><input type="text" id="idguard_popup_cancel_button_text" name="idguard_popup_cancel_button_text" value="<?php echo esc_attr($popup_cancel_button_text); ?>" /></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="idguard-section">
+                <h2>🔗 <?php _e('Indstillinger for annuller-knap redirect', 'idguard'); ?></h2>
+                <div class="idguard-helper"><?php _e('Vælg hvor kunden sendes hen, hvis de vælger at annullere aldersbekræftelsen.', 'idguard'); ?></div>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row" class="idguard-label"><?php _e('Redirect til', 'idguard'); ?></th>
+                        <td>
+                            <select name="idguard_cancel_redirect_option" id="idguard_cancel_redirect_option">
+                                <option value="home" <?php selected($cancel_redirect_option, 'home'); ?>><?php _e('Forside', 'idguard'); ?></option>
+                                <option value="cart" <?php selected($cancel_redirect_option, 'cart'); ?>><?php _e('Kurv', 'idguard'); ?></option>
+                                <option value="custom" <?php selected($cancel_redirect_option, 'custom'); ?>><?php _e('Egen URL', 'idguard'); ?></option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr valign="top" id="custom_url_row" style="<?php echo ($cancel_redirect_option === 'custom') ? '' : 'display: none;'; ?>">
+                        <th scope="row" class="idguard-label"><?php _e('Egen URL', 'idguard'); ?></th>
+                        <td>
+                            <input type="text" name="idguard_custom_cancel_url" value="<?php echo esc_attr($custom_cancel_url); ?>" />
+                            <p class="description"><?php _e('Indtast en relativ URL (fx /shop eller /kontakt) eller en absolut URL (fx https://eksempel.dk/shop)', 'idguard'); ?></p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <?php submit_button(__('Gem indstillinger', 'idguard'), 'primary', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;')); ?>
         </form>
-        <div style="margin-top:40px;">
-            <h2><?php _e('Kom i gang med IDguard', 'idguard'); ?></h2>
-            <ol>
-                <li><?php _e('Gennemgå og gem popup-indstillingerne.', 'idguard'); ?></li>
-                <li><?php _e('Sæt aldersgrænser på produkter eller kategorier.', 'idguard'); ?></li>
-                <li><?php _e('Test popup med knappen ovenfor.', 'idguard'); ?></li>
-                <li><?php _e('Gennemfør et testkøb for at sikre integrationen virker.', 'idguard'); ?></li>
-            </ol>
-        </div>
         <div id="idguard-popup-preview" style="display:none;"></div>
     </div>
     <script>
     jQuery(function($){
         $('#idguard-preview-popup').on('click', function(){
-            // Simpel popup preview (kan udvides med live data)
-            var html = '<div id="idguard-popup-demo" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;">'+
-                '<div role="dialog" aria-modal="true" aria-label="Aldersbekræftelse" style="background:#fff;padding:2em;border-radius:8px;max-width:400px;width:90%;box-shadow:0 4px 32px rgba(0,0,0,0.2);text-align:center;">'+
-                '<h2 style="color:#000;font-size:1.3em;margin-bottom:1em;">'+$('#idguard_popup_title').val()+'</h2>'+
-                '<p style="margin-bottom:1.5em;">'+$('#idguard_popup_message').val()+'</p>'+
-                '<button class="button button-primary" style="margin-bottom:1em;width:100%;font-size:1.1em;padding:0.7em;">'+$('#idguard_popup_button_text').val()+'</button>'+
-                '<button class="button" style="width:100%;font-size:1.1em;padding:0.7em;background:#f44336;color:#fff;">'+$('#idguard_popup_cancel_button_text').val()+'</button>'+
-                '<div id="idguard-popup-loading" style="display:none;margin-top:1em;"><span class="dashicons dashicons-update spin"></span> <?php _e('Vent venligst...', 'idguard'); ?></div>'+
-                '<div id="idguard-popup-error" style="display:none;color:#c00;margin-top:1em;"></div>'+
-                '<button aria-label="Luk" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5em;cursor:pointer;">&times;</button>'+
+            // Hent aktuelle værdier fra felterne
+            var title = $('#idguard_popup_title').val();
+            var message = $('#idguard_popup_message').val();
+            var confirmText = $('#idguard_popup_button_text').val();
+            var cancelText = $('#idguard_popup_cancel_button_text').val();
+            var textColor = $('#idguard_popup_text_color').val();
+            var bgColor = $('#idguard_popup_background_color').val();
+            var verifyBtnColor = $('#idguard_popup_verify_button_color').val();
+            var verifyBtnTextColor = $('#idguard_popup_verify_button_text_color').val();
+            var cancelBtnColor = $('#idguard_popup_cancel_button_color').val();
+            var cancelBtnTextColor = $('#idguard_popup_cancel_button_text_color').val();
+            // Byg popup HTML så det matcher frontend
+            var html = '<div id="idguard-popup-demo" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;">'+
+                '<div role="dialog" aria-modal="true" aria-label="Aldersbekræftelse" tabindex="-1" style="background:'+bgColor+';color:'+textColor+';padding:2em 1.5em 1.5em 1.5em;border-radius:12px;max-width:400px;width:95%;box-shadow:0 4px 32px rgba(0,0,0,0.18);text-align:center;position:relative;">'+
+                '<button aria-label="Luk" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:2em;line-height:1;color:'+textColor+';cursor:pointer;">&times;</button>'+ 
+                '<h2 style="color:'+textColor+';font-size:1.3em;margin-bottom:1em;">'+title+'</h2>'+ 
+                '<p style="margin-bottom:1.5em;">'+message+'</p>'+ 
+                '<div id="idguard-popup-error" style="display:none;color:#c00;margin-bottom:1em;"></div>'+ 
+                '<button class="idguard-popup-confirm" style="margin-bottom:1em;width:100%;font-size:1.1em;padding:0.7em;background:'+verifyBtnColor+';color:'+verifyBtnTextColor+';border:none;border-radius:5px;cursor:pointer;">'+confirmText+'</button>'+ 
+                '<button class="idguard-popup-cancel" style="width:100%;font-size:1.1em;padding:0.7em;background:'+cancelBtnColor+';color:'+cancelBtnTextColor+';border:none;border-radius:5px;cursor:pointer;">'+cancelText+'</button>'+ 
+                '<div id="idguard-popup-loading" style="display:none;margin-top:1em;"><span class="dashicons dashicons-update spin"></span> <?php echo esc_js(__('Vent venligst...', 'idguard')); ?></div>'+ 
                 '</div></div>';
             $('#idguard-popup-preview').html(html).show();
         });
         $(document).on('click', '#idguard-popup-demo button[aria-label="Luk"]', function(){
             $('#idguard-popup-preview').hide().empty();
+        });
+        // Luk popup hvis man klikker udenfor
+        $(document).on('mousedown', function(e){
+            var popup = $('#idguard-popup-demo > div');
+            if($('#idguard-popup-demo').is(':visible') && !$(e.target).closest(popup).length && !$(e.target).is('#idguard-preview-popup')){
+                $('#idguard-popup-preview').hide().empty();
+            }
         });
     });
     </script>
@@ -686,20 +755,17 @@ function idguard_settings_page() {
     <style>
         .instruction-box {
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 14px 18px;
             margin-bottom: 15px;
-            border-radius: 5px;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 6px;
+            transition: background-color 0.3s, box-shadow 0.3s;
             cursor: pointer;
-        }
-        .instruction-box:hover {
-            background-color: #f9f9f9;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            background: #f8fafc;
         }
         .instruction-box.selected {
             background-color: #e6f7ff;
             border-color: #0091ea;
-            box-shadow: 0px 4px 8px rgba(0, 145, 234, 0.2);
+            box-shadow: 0px 4px 8px rgba(0, 145, 234, 0.08);
         }
         .instruction-title {
             font-weight: bold;
@@ -707,24 +773,32 @@ function idguard_settings_page() {
             margin-bottom: 5px;
         }
         .age-limit {
-            display: none; /* Hide, just initially */
+            display: none;
+        }
+        .idguard-onboarding {
+            background: #e6f7ff;
+            border-left: 5px solid #0091ea;
+            padding: 18px 20px;
+            margin-bottom: 25px;
+            border-radius: 6px;
+        }
+        .idguard-helper {
+            color: #666;
+            font-size: 0.97em;
+            margin-bottom: 10px;
         }
     </style>
-
     <script>
     (function() {
         document.addEventListener('DOMContentLoaded', function() {
             const boxes = document.querySelectorAll('.instruction-box');
             const hiddenInput = document.getElementById('idguard_age_verification_mode');
             const ageLimitSelect = document.getElementById('idguard_global_age_limit');
-
             boxes.forEach(box => {
                 box.addEventListener('click', () => {
                     boxes.forEach(b => b.classList.remove('selected'));
                     box.classList.add('selected');
                     hiddenInput.value = box.dataset.value;
-
-                    // Show or hide age limit selection based on global selection
                     if (box.dataset.value === 'global') {
                         document.querySelector('.age-limit').style.display = 'block';
                     } else {
@@ -732,49 +806,59 @@ function idguard_settings_page() {
                     }
                 });
             });
-
             const currentSetting = hiddenInput.value;
             document.querySelector(`.instruction-box[data-value="${currentSetting}"]`)?.classList.add('selected');
-
-            // Initialize age limit visibility
             if (currentSetting === 'global') {
                 document.querySelector('.age-limit').style.display = 'block';
             }
         });
     })();
     </script>
-
     <div class="wrap">
-        <h1><?php _e('IDguard Indstillinger', 'idguard'); ?></h1>
+        <h1><span style="color:#004cb8;">⛨</span> <?php _e('IDguard Indstillinger', 'idguard'); ?></h1>
+        <div class="idguard-onboarding">
+            <strong><?php _e('Kom hurtigt i gang:', 'idguard'); ?></strong>
+            <ol style="margin-top:8px;">
+                <li><?php _e('Vælg den ønskede metode for aldersverifikation nedenfor.', 'idguard'); ?></li>
+                <li><?php _e('Gem indstillingerne nederst på siden.', 'idguard'); ?></li>
+                <li><?php _e('Sæt aldersgrænser på produkter eller kategorier hvis nødvendigt.', 'idguard'); ?></li>
+                <li><?php _e('Test i din webshop for at sikre korrekt integration.', 'idguard'); ?></li>
+            </ol>
+            <div style="margin-top:10px;">
+                <a href="<?php echo admin_url('admin.php?page=idguard_documentation'); ?>" class="button-secondary" style="margin-right:10px;">📖 <?php _e('Se dokumentation', 'idguard'); ?></a>
+                <a href="mailto:kontakt@arpecompany.dk" class="button-secondary">📬 <?php _e('Kontakt support', 'idguard'); ?></a>
+            </div>
+        </div>
         <form method="post" action="options.php">
             <?php
                 settings_fields('idguard_general_settings');
                 do_settings_sections('idguard_general_settings');
             ?>
             <h2><?php _e('Vælg aldersverifikationsmetode', 'idguard'); ?></h2>
-            <div class="instruction-box" data-value="off">
-                <div class="instruction-title"><?php _e('Slået fra', 'idguard'); ?></div>
+            <div class="idguard-helper" style="margin-bottom:18px;">
+                <?php _e('Vælg hvordan og hvornår kunder skal bekræfte deres alder. Hold musen over hver mulighed for mere info.', 'idguard'); ?>
+            </div>
+            <div class="instruction-box" data-value="off" title="<?php _e('Ingen aldersverifikation påkrævet.', 'idguard'); ?>">
+                <div class="instruction-title">🔓 <?php _e('Slået fra', 'idguard'); ?></div>
                 <div><?php _e('Ingen aldersverifikation vil være nødvendig.', 'idguard'); ?></div>
             </div>
-            <div class="instruction-box" data-value="global">
-                <div class="instruction-title"><?php _e('Global', 'idguard'); ?></div>
+            <div class="instruction-box" data-value="global" title="<?php _e('Alle produkter kræver aldersverifikation.', 'idguard'); ?>">
+                <div class="instruction-title">🌍 <?php _e('Global', 'idguard'); ?></div>
                 <div><?php _e('Aldersverifikation vil være nødvendig for alle produkter.', 'idguard'); ?></div>
             </div>
-            <div class="instruction-box" data-value="category">
-                <div class="instruction-title"><?php _e('Kategorispecifik', 'idguard'); ?></div>
+            <div class="instruction-box" data-value="category" title="<?php _e('Kun produkter i bestemte kategorier kræver aldersverifikation.', 'idguard'); ?>">
+                <div class="instruction-title">📁 <?php _e('Kategorispecifik', 'idguard'); ?></div>
                 <div><?php _e('Aldersverifikation vil være nødvendig for produkter i bestemte kategorier.', 'idguard'); ?></div>
             </div>
-            <div class="instruction-box" data-value="product">
-                <div class="instruction-title"><?php _e('Produktspecifik', 'idguard'); ?></div>
+            <div class="instruction-box" data-value="product" title="<?php _e('Kun bestemte produkter kræver aldersverifikation.', 'idguard'); ?>">
+                <div class="instruction-title">📦 <?php _e('Produktspecifik', 'idguard'); ?></div>
                 <div><?php _e('Aldersverifikation vil være nødvendig for bestemte produkter.', 'idguard'); ?></div>
             </div>
-            <div class="instruction-box" data-value="category_and_product">
-                <div class="instruction-title"><?php _e('Kategori og Produktspecifik', 'idguard'); ?></div>
-                <div><?php _e('Aldersverifikation vil være nødvendig baseret på kategorier og/eller individuelle produkter. Kategorier har højste prioritet, hvis aktiveret.', 'idguard'); ?></div>
+            <div class="instruction-box" data-value="category_and_product" title="<?php _e('Kombineret: både kategori og produkt kan kræve aldersverifikation. Højeste grænse gælder.', 'idguard'); ?>">
+                <div class="instruction-title">🔗 <?php _e('Kategori og Produktspecifik', 'idguard'); ?></div>
+                <div><?php _e('Aldersverifikation vil være nødvendig baseret på kategorier og/eller individuelle produkter. Kategorier har højeste prioritet, hvis aktiveret.', 'idguard'); ?></div>
             </div>
-
             <input type="hidden" name="idguard_age_verification_mode" id="idguard_age_verification_mode" value="<?php echo esc_attr(get_option('idguard_age_verification_mode', 'off')); ?>">
-
             <div class="age-limit">
                 <h3><?php _e('Vælg aldersgrænse for global indstilling', 'idguard'); ?></h3>
                 <select name="idguard_global_age_limit" id="idguard_global_age_limit">
@@ -783,10 +867,9 @@ function idguard_settings_page() {
                     <option value="18" <?php selected(get_option('idguard_global_age_limit'), '18'); ?>>18+</option>
                     <option value="21" <?php selected(get_option('idguard_global_age_limit'), '21'); ?>>21+</option>
                 </select>
-                <p><?php _e('Denne aldersgrænse vil gælde globalt, når aldersverifikation er aktiveret.', 'idguard'); ?></p>
+                <p class="idguard-helper"><?php _e('Denne aldersgrænse vil gælde globalt, når aldersverifikation er aktiveret.', 'idguard'); ?></p>
             </div>
-
-            <?php submit_button(); ?>
+            <?php submit_button(__('Gem indstillinger', 'idguard'), 'primary', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;')); ?>
         </form>
     </div>
     <?php

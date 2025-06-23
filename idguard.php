@@ -29,16 +29,21 @@ function idguard_is_authorized_domain() {
     $domain = parse_url(home_url(), PHP_URL_HOST);
     $transient_key = 'idguard_domain_auth_' . md5($domain);
     $cached = get_transient($transient_key);
-    if ($cached !== false) return $cached === '1';
-    // Fjern domain-param: endpoint skal selv detektere domænet
+    if ($cached !== false) {
+        error_log('[IDguard] Domæne: ' . $domain . ' (cached: ' . $cached . ')');
+        return $cached === '1';
+    }
     $response = wp_remote_get('https://assets.idguard.dk/api/authorize', ['timeout' => 8]);
     $authorized = false;
     if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200) {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
+        error_log('[IDguard] Domæne: ' . $domain . ' | Svar fra server: ' . $body);
         if (isset($data['authorized']) && $data['authorized'] === true) {
             $authorized = true;
         }
+    } else {
+        error_log('[IDguard] Domæne: ' . $domain . ' | FEJL ved kontakt til server.');
     }
     set_transient($transient_key, $authorized ? '1' : '0', 60*30); // 30 min cache
     return $authorized;
@@ -68,8 +73,11 @@ add_action('upgrader_process_complete', function($upgrader, $options) {
 }, 10, 2);
 
 function my_custom_plugin_settings_link($links) {
-    $settings_link = '<a href="' . admin_url('admin.php?page=idguard') . '">' . idguard_dk_text('⛨ Konfigurer IDguard') . '</a>';
-    array_unshift($links, $settings_link); // Add the link to the beginning of the array
+    // Vis kun link hvis domænet er autoriseret
+    if (function_exists('idguard_is_authorized_domain') && idguard_is_authorized_domain()) {
+        $settings_link = '<a href="' . admin_url('admin.php?page=idguard') . '">' . idguard_dk_text('⛨ Konfigurer IDguard') . '</a>';
+        array_unshift($links, $settings_link);
+    }
     return $links;
 }
 

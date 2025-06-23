@@ -258,4 +258,66 @@
             alert('Ingen ID token indstillet eller ukendt fejl. Kontakt support.');
         }
     }
+
+    // Tilføj global funktion til at vise popup for test/preview
+    window.idguardShowPopup = showPopup;
+
+    function showPopup() {
+        // Fjern evt. eksisterende popup
+        var old = document.getElementById('idguard-popup');
+        if(old) old.remove();
+        var d = window.idguardData;
+        var popup = document.createElement('div');
+        popup.id = 'idguard-popup';
+        popup.setAttribute('role','dialog');
+        popup.setAttribute('aria-modal','true');
+        popup.setAttribute('aria-label','Aldersbekræftelse');
+        popup.style.position = 'fixed';
+        popup.style.top = 0;
+        popup.style.left = 0;
+        popup.style.width = '100vw';
+        popup.style.height = '100vh';
+        popup.style.background = 'rgba(0,0,0,0.5)';
+        popup.style.zIndex = 99999;
+        popup.style.display = 'flex';
+        popup.style.alignItems = 'center';
+        popup.style.justifyContent = 'center';
+        popup.innerHTML = `
+            <div style="background:${d.customization.popupBackgroundColor};padding:2em;border-radius:8px;max-width:400px;width:90%;box-shadow:0 4px 32px rgba(0,0,0,0.2);text-align:center;position:relative;">
+                <h2 style="color:${d.customization.popupTextColor};font-size:1.3em;margin-bottom:1em;">${d.customization.popupTitle}</h2>
+                <p style="margin-bottom:1.5em;color:${d.customization.popupTextColor};">${d.customization.popupMessage}</p>
+                <button id="idguard-confirm" class="button button-primary" style="margin-bottom:1em;width:100%;font-size:1.1em;padding:0.7em;background:${d.customization.popupVerifyButtonColor};color:${d.customization.popupVerifyButtonTextColor};border:none;border-radius:4px;">${d.customization.confirmButton}</button>
+                <button id="idguard-cancel" class="button" style="width:100%;font-size:1.1em;padding:0.7em;background:${d.customization.popupCancelButtonColor};color:${d.customization.popupCancelButtonTextColor};border:none;border-radius:4px;">${d.customization.cancelButton}</button>
+                <div id="idguard-popup-loading" style="display:none;margin-top:1em;"><span class="dashicons dashicons-update spin"></span> Vent venligst...</div>
+                <div id="idguard-popup-error" style="display:none;color:#c00;margin-top:1em;"></div>
+                <button aria-label="Luk" id="idguard-close" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5em;cursor:pointer;">&times;</button>
+            </div>`;
+        document.body.appendChild(popup);
+        // Luk
+        document.getElementById('idguard-close').onclick = function(){ popup.remove(); };
+        document.getElementById('idguard-cancel').onclick = function(){
+            popup.remove();
+            if(d.customization.cancelRedirectOption==='cart') window.location.href = d.cartUrl;
+            else if(d.customization.cancelRedirectOption==='home') window.location.href = '/';
+            else if(d.customization.cancelRedirectOption==='custom' && d.customization.customCancelUrl) window.location.href = d.customization.customCancelUrl;
+        };
+        document.getElementById('idguard-confirm').onclick = function(){
+            var loading = document.getElementById('idguard-popup-loading');
+            var error = document.getElementById('idguard-popup-error');
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            // Simuler MitID kald (udskift med rigtig AJAX hvis nødvendigt)
+            setTimeout(function(){
+                loading.style.display = 'none';
+                // Her skal du indsætte AJAX-kald til alderstjek
+                // Hvis fejl:
+                // error.textContent = 'Aldersverifikation mislykkedes. Prøv igen.';
+                // error.style.display = 'block';
+                // return;
+                // Hvis succes:
+                popup.remove();
+                // Fortsæt checkout (evt. submit form eller lign.)
+            }, 2000);
+        };
+    }
 })();

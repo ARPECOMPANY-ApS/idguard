@@ -3,7 +3,7 @@
  * Plugin Name: IDguard
  * Plugin URI: https://idguard.dk
  * Description: Foretag automatisk alderstjek med MitID ved betaling på WooCommerce-webshops
- * Version: 2.1.1.4
+ * Version: 2.1.1.5
  * Author: IDguard
  * Author URI: https://idguard.dk
  * Text Domain: idguard
@@ -162,8 +162,11 @@ function idguard_activate() {
 register_activation_hook(__FILE__, 'idguard_activate');
 
 function idguard_init() {
-    // Indlæs kun script på WooCommerce checkout-siden
+    // Indlæs kun script på WooCommerce checkout-siden OG hvis domænet er autoriseret
     if (!function_exists('is_checkout') || !is_checkout()) {
+        return;
+    }
+    if (!idguard_is_authorized_domain()) {
         return;
     }
     $checkout_url = wc_get_checkout_url();

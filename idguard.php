@@ -3,7 +3,7 @@
  * Plugin Name: IDguard
  * Plugin URI: https://idguard.dk
  * Description: Foretag automatisk alderstjek med MitID ved betaling på WooCommerce-webshops
- * Version: 2.1.1.2
+ * Version: 2.1.1.3
  * Author: IDguard
  * Author URI: https://idguard.dk
  * Text Domain: idguard
@@ -198,46 +198,82 @@ function idguard_init() {
 }
 add_action('wp_enqueue_scripts', 'idguard_init');
 
-// Add a menu for the plugin
+// --- Domæne-autorisation ---
+function idguard_is_authorized_domain() {
+    $domain = parse_url(home_url(), PHP_URL_HOST);
+    $transient_key = 'idguard_domain_auth_' . md5($domain);
+    $cached = get_transient($transient_key);
+    if ($cached !== false) return $cached === '1';
+    $response = wp_remote_get('https://assets.idguard.dk/api/authorize?domain=' . urlencode($domain), ['timeout' => 8]);
+    $authorized = false;
+    if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200) {
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        if (isset($data['authorized']) && $data['authorized'] === true) {
+            $authorized = true;
+        }
+    }
+    set_transient($transient_key, $authorized ? '1' : '0', 60*30); // 30 min cache
+    return $authorized;
+}
+add_action('admin_notices', function() {
+    if (!idguard_is_authorized_domain()) {
+        echo '<div class="notice notice-error"><strong>🔒 IDguard er ikke autoriseret til dette domæne.</strong><br>Kontakt support for at få adgang. Plugin-funktionalitet er deaktiveret.</div>';
+    }
+});
+function idguard_block_if_not_authorized() {
+    if (!idguard_is_authorized_domain()) {
+        if (is_admin()) {
+            add_action('admin_menu', function() {
+                remove_menu_page('idguard');
+                add_menu_page('IDguard', 'IDguard', 'manage_options', 'idguard_unauthorized', function() {
+                    echo '<div class="wrap"><h1>🔒 IDguard ikke autoriseret</h1><p>Dette domæne er ikke godkendt til brug af IDguard. Kontakt <a href="mailto:kontakt@arpecompany.dk">support</a> for at få adgang.</p></div>';
+                }, 'dashicons-shield', 100);
+            }, 99);
+        }
+        // Stop videre hooks/funktioner
+        return false;
+    }
+    return true;
+}
+if (!idguard_block_if_not_authorized()) return;
+// --- Forbedret admin-menu ---
 function idguard_add_admin_menu() {
     add_menu_page(
-        __('Generelt', 'idguard'), // Page title
-        __('IDguard', 'idguard'), // Menu title
-        'manage_options', // Capability
-        'idguard', // Menu slug
-        'idguard_settings_page', // Callback function for our settings page
-        'dashicons-shield', // Icon
-        100 // Position
+        __('Indstillinger', 'idguard'),
+        __('IDguard', 'idguard'),
+        'manage_options',
+        'idguard',
+        'idguard_settings_page',
+        'dashicons-shield',
+        100
     );
-    
     add_submenu_page(
-        'idguard',             // Parent slug
-        'Popup',              // Page title
-        'Popup',              // Menu title
-        'manage_options',      // Capability
-        'idguard_popup',       // Menu slug
-        'idguard_popup_page'   // Callback function for our submenu Popup page
+        'idguard',
+        __('Design & Tekster', 'idguard'),
+        __('Design & Tekster', 'idguard'),
+        'manage_options',
+        'idguard_popup',
+        'idguard_popup_page'
     );
-    
     add_submenu_page(
-        'idguard',             // Parent slug
-        'Dokumentation',      // Page title
-        'Dokumentation',      // Menu title
-        'manage_options',      // Capability
-        'idguard_documentation',// Menu slug
-        'idguard_documentation_page' // Callback function for our submenu Documentation page
+        'idguard',
+        __('Dokumentation & Hjælp', 'idguard'),
+        __('Dokumentation & Hjælp', 'idguard'),
+        'manage_options',
+        'idguard_documentation',
+        'idguard_documentation_page'
     );
-    
     add_submenu_page(
-        'idguard',             // Parent slug
-        'Support',            // Page title
-        'Support',            // Menu title
-        'manage_options',      // Capability
-        'idguard_support',     // Menu slug
-        'idguard_support_page' // Callback function for our submenu Support page
+        'idguard',
+        __('Kundeservice', 'idguard'),
+        __('Kundeservice', 'idguard'),
+        'manage_options',
+        'idguard_support',
+        'idguard_support_page'
     );
 }
-add_action('admin_menu', 'idguard_add_admin_menu');
+add_action('admin_menu', 'idguard_add_admin_menu', 20);
 
 function idguard_enqueue_admin_scripts($hook) {
     if ($hook == 'toplevel_page_idguard' || $hook == 'idguard_page_idguard_popup') {
@@ -466,82 +502,69 @@ function idguard_popup_page() {
 }
 
 function idguard_documentation_page() {
+    $domain = parse_url(home_url(), PHP_URL_HOST);
+    $is_auth = idguard_is_authorized_domain();
     echo '<div class="idguard-documentation">';
-    echo '<h1>' . __('Dokumentation', 'idguard') . '</h1>';
-    
-    // Introduction
-    echo '<section class="idguard-section">';
-    echo '<h2>' . __('Introduktion', 'idguard') . '</h2>';
-    echo '<p>' . __('Velkommen til IDguard WooCommerce Plugin dokumentationen! Dette plugin strømliner proces for aldersverifikation for din WooCommerce butik, og sikrer overholdelse af lovkrav, mens det giver en problemfri shoppingoplevelse for dine kunder.', 'idguard') . '</p>';
+    echo '<h1>📖 ' . __('Dokumentation & Hjælp', 'idguard') . '</h1>';
+    if (!$is_auth) {
+        echo '<div class="notice notice-error" style="margin-bottom:20px;"><strong>🔒 Dette domæne er ikke autoriseret til IDguard.</strong><br>Kontakt <a href="mailto:kontakt@arpecompany.dk">support</a> for at få adgang.</div>';
+    } else {
+        echo '<div class="idguard-doc-section" style="background:#e6f7ff;padding:18px 20px;border-radius:6px;margin-bottom:25px;">';
+        echo '<strong>Velkommen til IDguard!</strong> Her finder du alt om opsætning, brug, fejlfinding og support.';
+        echo '</div>';
+    }
+    echo '<section class="idguard-doc-section"><h2>🚀 ' . __('Kom godt i gang', 'idguard') . '</h2>';
+    echo '<ol>';
+    echo '<li><b>Installer og aktiver plugin.</b></li>';
+    echo '<li><b>Autoriser dit domæne</b> (kontakt support hvis nødvendigt).</li>';
+    echo '<li><b>Gå til <a href="admin.php?page=idguard">Indstillinger</a> og vælg ønsket aldersverifikation.</b></li>';
+    echo '<li><b>Tilpas popup under <a href="admin.php?page=idguard_popup">Design & Tekster</a>.</b></li>';
+    echo '<li><b>Test integrationen i din webshop.</b></li>';
+    echo '</ol></section>';
+    echo '<section class="idguard-doc-section"><h2>⚙️ ' . __('Installation & Krav', 'idguard') . '</h2>';
+    echo '<ul>';
+    echo '<li>WordPress 5.0 eller nyere</li>';
+    echo '<li>WooCommerce 4.0 eller nyere</li>';
+    echo '<li>PHP 5.6 eller nyere</li>';
+    echo '<li>Domænet skal være autoriseret</li>';
+    echo '</ul></section>';
+    echo '<section class="idguard-doc-section"><h2>🛠️ ' . __('Brug & Funktioner', 'idguard') . '</h2>';
+    echo '<ul>';
+    echo '<li>Aldersverifikation med MitID på checkout</li>';
+    echo '<li>Indstil aldersgrænser på produkter og kategorier</li>';
+    echo '<li>Tilpas popupens design og tekster</li>';
+    echo '<li>Se ID-token på ordrer</li>';
+    echo '</ul></section>';
+    echo '<section class="idguard-doc-section"><h2>❓ ' . __('Ofte stillede spørgsmål (FAQ)', 'idguard') . '</h2>';
+    echo '<ul>';
+    echo '<li><b>Mit domæne er ikke autoriseret?</b> Kontakt support for at få adgang.</li>';
+    echo '<li><b>Popup vises ikke?</b> Tjek at aldersverifikation er aktiveret og popup er korrekt opsat.</li>';
+    echo '<li><b>Hvordan ændrer jeg tekster og farver?</b> Gå til <a href="admin.php?page=idguard_popup">Design & Tekster</a>.</li>';
+    echo '<li><b>Hvordan får jeg support?</b> Se fanen "Kundeservice".</li>';
+    echo '</ul></section>';
+    echo '<section class="idguard-doc-section"><h2>🧑‍💻 ' . __('Fejlfinding', 'idguard') . '</h2>';
+    echo '<ul>';
+    echo '<li>Tjek at domænet er autoriseret</li>';
+    echo '<li>Genindlæs siden og tøm cache</li>';
+    echo '<li>Deaktiver andre plugins midlertidigt</li>';
+    echo '<li>Kontakt support hvis problemet fortsætter</li>';
+    echo '</ul></section>';
+    echo '<section class="idguard-doc-section"><h2>📬 ' . __('Kontakt & Support', 'idguard') . '</h2>';
+    echo '<p>Mail: <a href="mailto:kontakt@arpecompany.dk">kontakt@arpecompany.dk</a><br>Telefon: +45 12 34 56 78<br>FAQ og guides: <a href="https://idguard.dk">idguard.dk</a></p>';
     echo '</section>';
-    
-    // Installation
-    echo '<section class="idguard-section">';
-    echo '<h2>' . __('Installation', 'idguard') . '</h2>';
-    echo '<h3>' . __('Krav', 'idguard') . '</h3>';
-    echo '<ul class="idguard-requirements">
-            <li>' . __('WordPress version 5.0 eller højere', 'idguard') . '</li>
-            <li>' . __('WooCommerce version 4.0 eller højere', 'idguard') . '</li>
-          </ul>';
-    echo '</section>';
-    
-    // Age Verification Process
-    echo '<section class="idguard-section">';
-    echo '<h2>' . __('Aldersverifikationsproces', 'idguard') . '</h2>';
-    echo '<p>' . __('Når en kunde forsøger at købe aldersbegrænsede produkter, sker følgende:', 'idguard') . '</p>';
-    echo '<ol class="idguard-process">
-            <li>' . __('Aldersverifikations-popup vises.', 'idguard') . '</li>
-            <li>' . __('Brugere skal bekræfte deres alder via MitID.', 'idguard') . '</li>
-            <li>' . __('Baseret på den alder MitID sender tilbage, kan de fortsætte med deres køb.', 'idguard') . '</li>
-          </ol>';
-    echo '</section>';
-    
-    // Styling Options
-    echo '<section class="idguard-section">';
-    echo '<h2>' . __('Stylingmuligheder', 'idguard') . '</h2>';
-    echo '<p>' . __('Tilpas udseendet af aldersverifikations-popupen, så det matcher din butiks branding gennem indstillingerne.', 'idguard') . '</p>';
-    echo '</section>';
-    
-    // Troubleshooting
-    echo '<section class="idguard-section">';
-    echo '<h2>' . __('Fejlfinding', 'idguard') . '</h2>';
-    echo '<p>' . __('Hvis du støder på problemer, kontakt support.', 'idguard') . '</p>';
-    echo '</section>';
-    
-    // Support
-    echo '<section class="idguard-section">';
-    echo '<h2>' . __('Support', 'idguard') . '</h2>';
-    echo '<p>' . __('For yderligere assistance, kontakt os venligst via <a href="mailto:kontakt@arpecompany.dk">kontakt@arpecompany.dk</a>.', 'idguard') . '</p>';
-    echo '</section>';
-    
-    echo '</div>'; // End of idguard-documentation
+    echo '</div>';
 }
-
-// Added CSS styles in the admin area for better presentation
-add_action('admin_head', function() {
-    echo '<style>
-        .idguard-documentation { font-family: Arial, sans-serif; padding: 20px; }
-        .idguard-section { margin-bottom: 20px; border: 1px solid #ccc; border-radius: 5px; padding: 10px; }
-        .idguard-requirements, .idguard-settings { margin-left: 20px; }
-        .idguard-process { margin-left: 20px; list-style-type: decimal; }
-        h1 { color: #333; }
-        h2 { color: #555; }
-        h3 { color: #777; }
-        p { line-height: 1.6; }
-        a { color: #0073aa; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-    </style>';
-});
-
 function idguard_support_page() {
+    $domain = parse_url(home_url(), PHP_URL_HOST);
+    $is_auth = idguard_is_authorized_domain();
     ?>
     <style>
         .support-section {
             margin: 20px 0;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            padding: 18px 20px;
+            background-color: #e6f7ff;
+            border: 1px solid #0091ea;
+            border-radius: 6px;
         }
         .support-title {
             font-weight: bold;
@@ -557,27 +580,59 @@ function idguard_support_page() {
         .support-link:hover {
             text-decoration: underline;
         }
+        .idguard-status {
+            margin: 18px 0 10px 0;
+            padding: 12px 16px;
+            border-radius: 5px;
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+            color: #ad8b00;
+        }
+        .idguard-status.ok {
+            background: #f6ffed;
+            border-color: #b7eb8f;
+            color: #389e0d;
+        }
+        .idguard-status.err {
+            background: #fff1f0;
+            border-color: #ffa39e;
+            color: #cf1322;
+        }
     </style>
-
     <div class="wrap">
-        <h1><?php _e('Support', 'idguard'); ?></h1>
+        <h1>🛟 <?php _e('Kundeservice', 'idguard'); ?></h1>
         <div class="support-section">
             <div class="support-title"><?php _e('Har du brug for hjælp?', 'idguard'); ?></div>
-            <p><?php _e('Vi er her for at hjælpe dig! Tjek venligst følgende ressourcer for assistance:', 'idguard'); ?></p>
-            <a href="<?php echo admin_url('admin.php?page=idguard_documentation'); ?>" class="support-link">
-                <?php _e('📖 Dokumentation', 'idguard'); ?>
-            </a>
-            <a href="<?php echo 'https://idguard.dk'; ?>" class="support-link">
-                <?php _e('❓ Ofte stillede spørgsmål (FAQ)', 'idguard'); ?>
-            </a>
-            <a href="mailto:kontakt@arpecompany.dk" class="support-link" target="_blank">
-                <?php _e('📬 Kontakt os (kontakt@arpecompany.dk)', 'idguard'); ?>
-            </a>
+            <div class="idguard-status <?php echo $is_auth ? 'ok' : 'err'; ?>">
+                <?php if ($is_auth) {
+                    echo '✅ Dit domæne er autoriseret til IDguard.';
+                } else {
+                    echo '❌ Dette domæne er <b>ikke</b> autoriseret. Kontakt <a href="mailto:kontakt@arpecompany.dk">support</a> for at få adgang.';
+                } ?>
+            </div>
+            <p><?php _e('Vi er her for at hjælpe dig! Følg disse trin:', 'idguard'); ?></p>
+            <ol>
+                <li>Læs <a href="admin.php?page=idguard_documentation">dokumentationen</a> og FAQ.</li>
+                <li>Tjek at dit domæne er autoriseret.</li>
+                <li>Kontakt os hvis du har brug for hjælp.</li>
+            </ol>
+            <a href="mailto:kontakt@arpecompany.dk" class="support-link">📬 kontakt@arpecompany.dk</a>
+            <a href="https://idguard.dk" class="support-link" target="_blank">🌐 idguard.dk</a>
+        </div>
+        <div class="support-section">
+            <div class="support-title"><?php _e('Ofte stillede spørgsmål', 'idguard'); ?></div>
+            <ul>
+                <li><b>Hvordan får jeg adgang?</b> Kontakt support for autorisation.</li>
+                <li><b>Hvordan ændrer jeg popup?</b> Gå til "Design & Tekster".</li>
+                <li><b>Hvordan ser jeg ID-token?</b> På ordredetaljer i WooCommerce.</li>
+                <li><b>Hvordan får jeg teknisk hjælp?</b> Skriv til kontakt@arpecompany.dk</li>
+            </ul>
         </div>
     </div>
     <?php
 }
 
+// Register settings
 function idguard_register_settings() {
     // General settings
     register_setting('idguard_general_settings', 'idguard_age_verification_mode');

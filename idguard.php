@@ -176,3 +176,159 @@ add_action('admin_notices', function() {
         </div>';
     }
 });
+
+function idguard_init() {
+    // Indlæs kun script på WooCommerce checkout-siden OG hvis domænet er autoriseret
+    if (!function_exists('is_checkout') || !is_checkout()) {
+        return;
+    }
+    if (!idguard_is_authorized_domain()) {
+        return;
+    }
+    $checkout_url = wc_get_checkout_url();
+    $cart_url = wc_get_cart_url();
+    $script_url = plugins_url('idguard.js', __FILE__);
+    wp_enqueue_script('idguard-script', $script_url, [], '1.1.0', true);
+    $nonce = wp_create_nonce('idguard_nonce');
+    $customization = [
+        'popupTitle' => get_option('idguard_popup_title', 'Din ordre indeholder aldersbegrænsede varer'),
+        'popupMessage' => get_option('idguard_popup_message', 'Den danske lovgivning kræver at vi kontrollerer din alder med MitID inden du kan købe aldersbegrænsede varer.'),
+        'confirmButton' => get_option('idguard_popup_button_text', 'Fortsæt købet'),
+        'cancelButton' => get_option('idguard_popup_cancel_button_text', 'Gå tilbage'),
+        'popupTextColor' => get_option('idguard_popup_text_color', '#000000'),
+        'popupBackgroundColor' => get_option('idguard_popup_background_color', '#ffffff'),
+        'popupVerifyButtonColor' => get_option('idguard_popup_verify_button_color', '#004cb8'),
+        'popupVerifyButtonTextColor' => get_option('idguard_popup_verify_button_text_color', '#ffffff'),
+        'popupCancelButtonColor' => get_option('idguard_popup_cancel_button_color', '#d6d6d6'),
+        'popupCancelButtonTextColor' => get_option('idguard_popup_cancel_button_text_color', '#000000'),
+        'cancelRedirectOption' => get_option('idguard_cancel_redirect_option', 'cart'),
+        'customCancelUrl' => get_option('idguard_custom_cancel_url', '')
+    ];
+    $is_order_received = is_wc_endpoint_url('order-received');
+    wp_localize_script('idguard-script', 'idguardData', [
+        'pluginUrl' => plugins_url('', __FILE__),
+        'checkoutUrl' => $checkout_url,
+        'cartUrl' => $cart_url,
+        'requiredAge' => idguard_get_required_age_for_verification(),
+        'nonce' => $nonce,
+        'customization' => $customization,
+        'isOrderReceivedPage' => $is_order_received
+    ]);
+}
+add_action('wp_enqueue_scripts', 'idguard_init');
+
+// --- Admin-menu ---
+function idguard_add_admin_menu() {
+    add_menu_page(
+        __('Indstillinger', 'idguard'),
+        __('IDguard', 'idguard'),
+        'manage_options',
+        'idguard',
+        'idguard_settings_page',
+        'dashicons-shield',
+        100
+    );
+    add_submenu_page(
+        'idguard',
+        __('Design & Tekster', 'idguard'),
+        __('Design & Tekster', 'idguard'),
+        'manage_options',
+        'idguard_popup',
+        'idguard_popup_page'
+    );
+    add_submenu_page(
+        'idguard',
+        __('Dokumentation & Hjælp', 'idguard'),
+        __('Dokumentation & Hjælp', 'idguard'),
+        'manage_options',
+        'idguard_documentation',
+        'idguard_documentation_page'
+    );
+    add_submenu_page(
+        'idguard',
+        __('Kundeservice', 'idguard'),
+        __('Kundeservice', 'idguard'),
+        'manage_options',
+        'idguard_support',
+        'idguard_support_page'
+    );
+}
+add_action('admin_menu', 'idguard_add_admin_menu', 20);
+
+// Register settings
+function idguard_register_settings() {
+    // General settings
+    register_setting('idguard_general_settings', 'idguard_age_verification_mode');
+    register_setting('idguard_general_settings', 'idguard_global_age_limit');
+
+    // Popup settings
+    register_setting('idguard_popup_settings', 'idguard_popup_text_color');
+    register_setting('idguard_popup_settings', 'idguard_popup_background_color');
+    register_setting('idguard_popup_settings', 'idguard_popup_verify_button_color');
+    register_setting('idguard_popup_settings', 'idguard_popup_cancel_button_color');
+    register_setting('idguard_popup_settings', 'idguard_popup_verify_button_text_color');
+    register_setting('idguard_popup_settings', 'idguard_popup_cancel_button_text_color');
+    register_setting('idguard_popup_settings', 'idguard_popup_title');
+    register_setting('idguard_popup_settings', 'idguard_popup_message');
+    register_setting('idguard_popup_settings', 'idguard_popup_button_text');
+    register_setting('idguard_popup_settings', 'idguard_popup_cancel_button_text');
+    register_setting('idguard_popup_settings', 'idguard_cancel_redirect_option');
+    register_setting('idguard_popup_settings', 'idguard_custom_cancel_url');
+}
+add_action('admin_init', 'idguard_register_settings');
+
+// Settings page content
+function idguard_settings_page() {
+    ?>
+    <div class="wrap">
+        <h1><span style="color:#004cb8;">⛨</span> <?php _e('IDguard Indstillinger', 'idguard'); ?></h1>
+        <form method="post" action="options.php">
+            <?php
+                settings_fields('idguard_general_settings');
+                do_settings_sections('idguard_general_settings');
+            ?>
+            <h2><?php _e('Vælg aldersverifikationsmetode', 'idguard'); ?></h2>
+            <input type="hidden" name="idguard_age_verification_mode" id="idguard_age_verification_mode" value="<?php echo esc_attr(get_option('idguard_age_verification_mode', 'off')); ?>">
+            <?php submit_button(__('Gem indstillinger', 'idguard'), 'primary', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;')); ?>
+        </form>
+    </div>
+    <?php
+}
+
+function idguard_popup_page() {
+    ?>
+    <div class="wrap">
+        <h1><span style="color:#004cb8;">⛨</span> <?php _e('IDguard Popup Indstillinger', 'idguard'); ?></h1>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields('idguard_popup_settings');
+            do_settings_sections('idguard_popup_settings');
+            ?>
+            <?php submit_button(__('Gem indstillinger', 'idguard'), 'primary', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;')); ?>
+        </form>
+    </div>
+    <?php
+}
+
+function idguard_documentation_page() {
+    ?>
+    <div class="wrap">
+        <h1>📖 <?php _e('Dokumentation & Hjælp', 'idguard'); ?></h1>
+        <p><?php _e('Her finder du dokumentation for IDguard plugin.', 'idguard'); ?></p>
+    </div>
+    <?php
+}
+
+function idguard_support_page() {
+    ?>
+    <div class="wrap">
+        <h1>🛟 <?php _e('Kundeservice', 'idguard'); ?></h1>
+        <p><?php _e('Kontakt os på kontakt@arpecompany.dk for support.', 'idguard'); ?></p>
+    </div>
+    <?php
+}
+
+// Get the required age for verification
+function idguard_get_required_age_for_verification() {
+    return false; // Simplified for now
+}

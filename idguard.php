@@ -24,8 +24,12 @@ define('IDGUARD_MIN_PHP_VER', '5.6');
 define('IDGUARD_MIN_WP_VER', '5.0');
 define('IDGUARD_MIN_WC_VER', '4.0');
 
-// --- Domæne-autorisation ---
+// --- Domæne-autorisation (MIDLERTIDIGT DEAKTIVERET) ---
 function idguard_is_authorized_domain() {
+    // MIDLERTIDIGT: Returner altid true for at tillade alle domæner
+    return true;
+    
+    /*
     $domain = parse_url(home_url(), PHP_URL_HOST);
     $transient_key = 'idguard_domain_auth_' . md5($domain);
     $cached = get_transient($transient_key);
@@ -47,6 +51,7 @@ function idguard_is_authorized_domain() {
     }
     set_transient($transient_key, $authorized ? '1' : '0', 60*30); // 30 min cache
     return $authorized;
+    */
 }
 
 // Redirect to the settings page after activation

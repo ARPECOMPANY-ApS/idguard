@@ -328,7 +328,221 @@ function idguard_support_page() {
     <?php
 }
 
-// Get the required age for verification
+// Check if current cart or product page has age-restricted items
 function idguard_get_required_age_for_verification() {
-    return false; // Simplified for now
+    $age_verification_mode = get_option('idguard_age_verification_mode', 'off');
+    
+    if ($age_verification_mode === 'off') {
+        return false;
+    }
+    
+    $global_age_limit = get_option('idguard_global_age_limit', '');
+    
+    if ($age_verification_mode === 'global' && !empty($global_age_limit)) {
+        return intval($global_age_limit);
+    }
+    
+    if ($age_verification_mode === 'individual') {
+        if (function_exists('WC') && WC()->cart) {
+            $max_age_limit = 0;
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $product_id = $cart_item['product_id'];
+                $product_age_limit = get_post_meta($product_id, '_age_limit', true);
+                
+                // Also check category age limits
+                $product = wc_get_product($product_id);
+                $category_ids = $product->get_category_ids();
+                foreach ($category_ids as $category_id) {
+                    $category_age_limit = get_term_meta($category_id, '_age_limit', true);
+                    if (!empty($category_age_limit) && intval($category_age_limit) > $max_age_limit) {
+                        $max_age_limit = intval($category_age_limit);
+                    }
+                }
+                
+                if (!empty($product_age_limit) && intval($product_age_limit) > $max_age_limit) {
+                    $max_age_limit = intval($product_age_limit);
+                }
+            }
+            return $max_age_limit > 0 ? $max_age_limit : false;
+        }
+    }
+    
+    return false;
 }
+
+// Add age limit field to product edit page
+function idguard_add_product_age_limit_field() {
+    woocommerce_wp_text_input(array(
+        'id' => '_age_limit',
+        'label' => __('Aldersgrænse', 'idguard'),
+        'description' => __('Minimum alder for at købe dette produkt (f.eks. 18)', 'idguard'),
+        'desc_tip' => true,
+        'type' => 'number',
+        'custom_attributes' => array(
+            'min' => '0',
+            'max' => '99',
+            'step' => '1'
+        )
+    ));
+}
+add_action('woocommerce_product_options_general_product_data', 'idguard_add_product_age_limit_field');
+
+// Save product age limit field
+function idguard_save_product_age_limit_field($post_id) {
+    $age_limit = $_POST['_age_limit'];
+    if (!empty($age_limit)) {
+        update_post_meta($post_id, '_age_limit', sanitize_text_field($age_limit));
+    } else {
+        delete_post_meta($post_id, '_age_limit');
+    }
+}
+add_action('woocommerce_process_product_meta', 'idguard_save_product_age_limit_field');
+
+// Add age limit field to category edit page
+function idguard_add_category_age_limit_field($term) {
+    $age_limit = get_term_meta($term->term_id, '_age_limit', true);
+    ?>
+    <tr class="form-field">
+        <th scope="row" valign="top">
+            <label for="age_limit"><?php _e('Aldersgrænse', 'idguard'); ?></label>
+        </th>
+        <td>
+            <input type="number" name="age_limit" id="age_limit" value="<?php echo esc_attr($age_limit); ?>" min="0" max="99" step="1" />
+            <p class="description"><?php _e('Minimum alder for at købe produkter i denne kategori (f.eks. 18)', 'idguard'); ?></p>
+        </td>
+    </tr>
+    <?php
+}
+add_action('product_cat_edit_form_fields', 'idguard_add_category_age_limit_field');
+
+// Save category age limit field
+function idguard_save_category_age_limit_field($term_id) {
+    if (isset($_POST['age_limit'])) {
+        $age_limit = sanitize_text_field($_POST['age_limit']);
+        if (!empty($age_limit)) {
+            update_term_meta($term_id, '_age_limit', $age_limit);
+        } else {
+            delete_term_meta($term_id, '_age_limit');
+        }
+    }
+}
+add_action('edited_product_cat', 'idguard_save_category_age_limit_field');
+
+// Add column to products admin list
+function idguard_add_product_columns($columns) {
+    $columns['age_limit'] = __('Aldersgrænse', 'idguard');
+    return $columns;
+}
+add_filter('manage_edit-product_columns', 'idguard_add_product_columns');
+
+// Populate age limit column
+function idguard_populate_product_columns($column, $post_id) {
+    if ($column == 'age_limit') {
+        $age_limit = get_post_meta($post_id, '_age_limit', true);
+        echo $age_limit ? $age_limit . '+' : '—';
+    }
+}
+add_action('manage_product_posts_custom_column', 'idguard_populate_product_columns', 10, 2);
+
+// Add column to categories admin list
+function idguard_add_category_columns($columns) {
+    $columns['age_limit'] = __('Aldersgrænse', 'idguard');
+    return $columns;
+}
+add_filter('manage_edit-product_cat_columns', 'idguard_add_category_columns');
+
+// Populate category age limit column
+function idguard_populate_category_columns($content, $column_name, $term_id) {
+    if ($column_name == 'age_limit') {
+        $age_limit = get_term_meta($term_id, '_age_limit', true);
+        $content = $age_limit ? $age_limit . '+' : '—';
+    }
+    return $content;
+}
+add_filter('manage_product_cat_custom_column', 'idguard_populate_category_columns', 10, 3);
+
+// Ajax handler for dismissing notices
+function idguard_dismiss_notice() {
+    if (isset($_POST['notice'])) {
+        update_option('dismissed-' . sanitize_text_field($_POST['notice']), true);
+    }
+    wp_die();
+}
+add_action('wp_ajax_idguard_dismiss_notice', 'idguard_dismiss_notice');
+
+// Add dismiss notice script
+function idguard_dismiss_notice_script() {
+    ?>
+    <script>
+    jQuery(document).ready(function($) {
+        $(document).on('click', '.notice[data-notice] .notice-dismiss', function() {
+            var notice = $(this).parent().attr('data-notice');
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'idguard_dismiss_notice',
+                    notice: notice
+                }
+            });
+        });
+    });
+    </script>
+    <?php
+}
+add_action('admin_footer', 'idguard_dismiss_notice_script');
+
+// Activation hook
+function idguard_activate() {
+    set_transient('idguard_plugin_activated', true, 30);
+}
+register_activation_hook(__FILE__, 'idguard_activate');
+
+// Check for WooCommerce dependency
+function idguard_check_woocommerce() {
+    if (!class_exists('WooCommerce')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-error"><p>';
+            echo '<strong>IDguard:</strong> ' . __('Dette plugin kræver WooCommerce for at fungere korrekt.', 'idguard');
+            echo '</p></div>';
+        });
+        return false;
+    }
+    return true;
+}
+add_action('plugins_loaded', 'idguard_check_woocommerce');
+
+// Check PHP and WordPress versions
+function idguard_check_requirements() {
+    if (version_compare(PHP_VERSION, IDGUARD_MIN_PHP_VER, '<')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-error"><p>';
+            printf(__('IDguard kræver PHP %s eller nyere. Du kører version %s.', 'idguard'), IDGUARD_MIN_PHP_VER, PHP_VERSION);
+            echo '</p></div>';
+        });
+        return false;
+    }
+    
+    global $wp_version;
+    if (version_compare($wp_version, IDGUARD_MIN_WP_VER, '<')) {
+        add_action('admin_notices', function() use ($wp_version) {
+            echo '<div class="notice notice-error"><p>';
+            printf(__('IDguard kræver WordPress %s eller nyere. Du kører version %s.', 'idguard'), IDGUARD_MIN_WP_VER, $wp_version);
+            echo '</p></div>';
+        });
+        return false;
+    }
+    
+    return true;
+}
+add_action('plugins_loaded', 'idguard_check_requirements');
+
+// Plugin deactivation hook
+function idguard_deactivate() {
+    // Clean up any temporary data
+    delete_transient('idguard_plugin_activated');
+    // Clear domain authorization cache
+    $domain = parse_url(home_url(), PHP_URL_HOST);
+    delete_transient('idguard_domain_auth_' . md5($domain));
+}
+register_deactivation_hook(__FILE__, 'idguard_deactivate');

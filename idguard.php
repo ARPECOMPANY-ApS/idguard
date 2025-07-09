@@ -26,8 +26,8 @@ define('IDGUARD_MIN_WC_VER', '4.0');
 
 // Redirect to the settings page after activation
 function idguard_redirect_after_activation() {
-    if (get_option('idguard_plugin_activated', false)) {
-        delete_option('idguard_plugin_activated');
+    if (get_transient('idguard_plugin_activated')) {
+        delete_transient('idguard_plugin_activated');
         wp_redirect(admin_url('admin.php?page=idguard'));
         exit;
     }
@@ -196,6 +196,12 @@ function idguard_settings_page() {
     if (isset($_POST['submit']) && wp_verify_nonce($_POST['_wpnonce'], 'idguard_general_settings-options')) {
         $mode = sanitize_text_field($_POST['idguard_age_verification_mode']);
         $global_age = sanitize_text_field($_POST['idguard_global_age_limit']);
+        
+        // Validate global age limit against allowed presets
+        $allowed_ages = array('15', '16', '18', '21');
+        if (!in_array($global_age, $allowed_ages)) {
+            $global_age = '18'; // Default to 18 if invalid
+        }
         
         update_option('idguard_age_verification_mode', $mode);
         update_option('idguard_global_age_limit', $global_age);
@@ -389,8 +395,13 @@ function idguard_settings_page() {
                         
                         <div class="idguard-global-age <?php echo $current_mode === 'global' ? 'show' : ''; ?>">
                             <label><strong>Minimum alder:</strong></label>
-                            <input type="number" name="idguard_global_age_limit" value="<?php echo esc_attr($current_global_age); ?>" min="13" max="99" class="age-input">
-                            <span>år</span>
+                            <select name="idguard_global_age_limit" class="age-input" style="width: auto; min-width: 80px;">
+                                <option value="15" <?php selected($current_global_age, '15'); ?>>15 år</option>
+                                <option value="16" <?php selected($current_global_age, '16'); ?>>16 år</option>
+                                <option value="18" <?php selected($current_global_age, '18'); ?>>18 år</option>
+                                <option value="21" <?php selected($current_global_age, '21'); ?>>21 år</option>
+                            </select>
+                            <p style="font-size: 0.9em; color: #666; margin-top: 0.5em;">Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.</p>
                         </div>
                     </div>
                     
@@ -411,8 +422,9 @@ function idguard_settings_page() {
                 <div class="idguard-help-text">
                     <h4>💡 Tip til opsætning</h4>
                     <ul>
-                        <li><strong>Global:</strong> Vælg denne hvis alle dine produkter kræver samme aldersverifikation (f.eks. 18+)</li>
+                        <li><strong>Global:</strong> Vælg denne hvis alle dine produkter kræver samme aldersverifikation</li>
                         <li><strong>Individuel:</strong> Vælg denne hvis du har blandede produkter med forskellige alderskrav</li>
+                        <li><strong>API begrænsning:</strong> Kun 15, 16, 18 og 21 år er tilgængelige via MitID API</li>
                         <li><strong>Test altid:</strong> Brug preview-funktionen til at teste før du aktiverer</li>
                     </ul>
                 </div>
@@ -799,6 +811,27 @@ function idguard_popup_page() {
     
     // Initialize preview
     updatePreview();
+    
+    // Add preview popup function for admin
+    window.idguardShowPopup = function() {
+        if (typeof showPopup === 'function') {
+            showPopup();
+        } else {
+            // Create a simple admin preview popup
+            var popup = document.createElement('div');
+            popup.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 2em; border-radius: 8px; max-width: 400px; text-align: center; position: relative;">
+                        <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer;">&times;</button>
+                        <h3>Preview: IDguard Popup</h3>
+                        <p>Dette er hvordan popup'en vil se ud for dine kunder. Klik X for at lukke.</p>
+                        <p style="color: #666; font-size: 0.9em;">Bemærk: Dette er kun en forhåndsvisning. Den faktiske popup indlæser MitID integration.</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+    };
     </script>
     <?php
 }
@@ -994,13 +1027,18 @@ function idguard_documentation_page() {
             
             <h3>Aldersverifikations metoder</h3>
             
+            <div class="alert-box alert-info">
+                <strong>⚠️ Vigtig information om aldersgrænser:</strong><br>
+                IDguard understøtter kun følgende aldersgrænser via MitID API: <strong>15, 16, 18 og 21 år</strong>. Andre aldersgrænser er ikke mulige.
+            </div>
+            
             <h4>🔴 Deaktiveret</h4>
             <p>Ingen aldersverifikation. Alle kunder kan købe alle produkter uden begrænsninger.</p>
             
             <h4>🌐 Global aldersgrænse</h4>
             <p>Samme aldersgrænse for alle produkter på webshop'en. Simpel løsning for butikker hvor alle produkter kræver samme alder.</p>
             <ul>
-                <li>Vælg aldersgrænse (f.eks. 18 år)</li>
+                <li>Vælg en af de tilgængelige aldersgrænser: 15, 16, 18 eller 21 år</li>
                 <li>Alle produkter i kurven udløser verifikation</li>
                 <li>Hurtig opsætning</li>
             </ul>
@@ -1008,8 +1046,8 @@ function idguard_documentation_page() {
             <h4>🎯 Individuelle aldersgrænser</h4>
             <p>Forskellige aldersgrænser på produkter og kategorier. Giver fuld kontrol over hvilke produkter der kræver verifikation.</p>
             <ul>
-                <li>Sæt aldersgrænse på individuelle produkter</li>
-                <li>Sæt aldersgrænse på hele kategorier</li>
+                <li>Sæt aldersgrænse på individuelle produkter (15, 16, 18 eller 21 år)</li>
+                <li>Sæt aldersgrænse på hele kategorier (15, 16, 18 eller 21 år)</li>
                 <li>Kun produkter med aldersgrænse udløser verifikation</li>
                 <li>Produktgrænse overskriver kategorigrænse</li>
             </ul>
@@ -1462,19 +1500,21 @@ function idguard_get_required_age_for_verification() {
     }
     
     if ($age_verification_mode === 'individual') {
-        if (function_exists('WC') && WC()->cart) {
+        if (idguard_has_cart_items()) {
             $max_age_limit = 0;
-            foreach (WC()->cart->get_cart() as $cart_item) {
+            foreach (idguard_get_cart_items() as $cart_item) {
                 $product_id = $cart_item['product_id'];
                 $product_age_limit = get_post_meta($product_id, '_age_limit', true);
                 
                 // Also check category age limits
                 $product = wc_get_product($product_id);
-                $category_ids = $product->get_category_ids();
-                foreach ($category_ids as $category_id) {
-                    $category_age_limit = get_term_meta($category_id, '_age_limit', true);
-                    if (!empty($category_age_limit) && intval($category_age_limit) > $max_age_limit) {
-                        $max_age_limit = intval($category_age_limit);
+                if ($product) {
+                    $category_ids = $product->get_category_ids();
+                    foreach ($category_ids as $category_id) {
+                        $category_age_limit = get_term_meta($category_id, '_age_limit', true);
+                        if (!empty($category_age_limit) && intval($category_age_limit) > $max_age_limit) {
+                            $max_age_limit = intval($category_age_limit);
+                        }
                     }
                 }
                 
@@ -1491,28 +1531,51 @@ function idguard_get_required_age_for_verification() {
 
 // Add age limit field to product edit page
 function idguard_add_product_age_limit_field() {
-    woocommerce_wp_text_input(array(
-        'id' => '_age_limit',
-        'label' => __('Aldersgrænse', 'idguard'),
-        'description' => __('Minimum alder for at købe dette produkt (f.eks. 18)', 'idguard'),
-        'desc_tip' => true,
-        'type' => 'number',
-        'custom_attributes' => array(
-            'min' => '0',
-            'max' => '99',
-            'step' => '1'
-        )
-    ));
+    $current_value = get_post_meta(get_the_ID(), '_age_limit', true);
+    ?>
+    <div class="options_group">
+        <p class="form-field _age_limit_field">
+            <label for="_age_limit"><?php _e('Aldersgrænse', 'idguard'); ?></label>
+            <select id="_age_limit" name="_age_limit" class="select short">
+                <option value=""><?php _e('Ingen aldersgrænse', 'idguard'); ?></option>
+                <option value="15" <?php selected($current_value, '15'); ?>>15+ år</option>
+                <option value="16" <?php selected($current_value, '16'); ?>>16+ år</option>
+                <option value="18" <?php selected($current_value, '18'); ?>>18+ år</option>
+                <option value="21" <?php selected($current_value, '21'); ?>>21+ år</option>
+            </select>
+            <span class="description"><?php _e('Vælg den påkrævede minimumsalder for dette produkt. Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.', 'idguard'); ?></span>
+        </p>
+    </div>
+    <?php
 }
 add_action('woocommerce_product_options_general_product_data', 'idguard_add_product_age_limit_field');
 
 // Save product age limit field
 function idguard_save_product_age_limit_field($post_id) {
-    $age_limit = $_POST['_age_limit'];
-    if (!empty($age_limit)) {
-        update_post_meta($post_id, '_age_limit', sanitize_text_field($age_limit));
-    } else {
-        delete_post_meta($post_id, '_age_limit');
+    // Security check: verify user has capability to edit products
+    if (!current_user_can('edit_product', $post_id)) {
+        return;
+    }
+    
+    // Security check: verify nonce
+    if (!isset($_POST['woocommerce_meta_nonce']) || !wp_verify_nonce($_POST['woocommerce_meta_nonce'], 'woocommerce_save_data')) {
+        return;
+    }
+    
+    // Check if this is an autosave
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    
+    if (isset($_POST['_age_limit'])) {
+        $age_limit = sanitize_text_field($_POST['_age_limit']);
+        // Validate against allowed age presets
+        $allowed_ages = array('15', '16', '18', '21');
+        if (!empty($age_limit) && in_array($age_limit, $allowed_ages)) {
+            update_post_meta($post_id, '_age_limit', $age_limit);
+        } else {
+            delete_post_meta($post_id, '_age_limit');
+        }
     }
 }
 add_action('woocommerce_process_product_meta', 'idguard_save_product_age_limit_field');
@@ -1526,8 +1589,14 @@ function idguard_add_category_age_limit_field($term) {
             <label for="age_limit"><?php _e('Aldersgrænse', 'idguard'); ?></label>
         </th>
         <td>
-            <input type="number" name="age_limit" id="age_limit" value="<?php echo esc_attr($age_limit); ?>" min="0" max="99" step="1" />
-            <p class="description"><?php _e('Minimum alder for at købe produkter i denne kategori (f.eks. 18)', 'idguard'); ?></p>
+            <select name="age_limit" id="age_limit">
+                <option value=""><?php _e('Ingen aldersgrænse', 'idguard'); ?></option>
+                <option value="15" <?php selected($age_limit, '15'); ?>>15+ år</option>
+                <option value="16" <?php selected($age_limit, '16'); ?>>16+ år</option>
+                <option value="18" <?php selected($age_limit, '18'); ?>>18+ år</option>
+                <option value="21" <?php selected($age_limit, '21'); ?>>21+ år</option>
+            </select>
+            <p class="description"><?php _e('Vælg den påkrævede minimumsalder for produkter i denne kategori. Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.', 'idguard'); ?></p>
         </td>
     </tr>
     <?php
@@ -1536,9 +1605,21 @@ add_action('product_cat_edit_form_fields', 'idguard_add_category_age_limit_field
 
 // Save category age limit field
 function idguard_save_category_age_limit_field($term_id) {
+    // Security check: verify user has capability to edit terms
+    if (!current_user_can('manage_product_terms')) {
+        return;
+    }
+    
+    // Security check: verify nonce (WordPress handles this for category forms)
+    if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update-tag_' . $term_id)) {
+        return;
+    }
+    
     if (isset($_POST['age_limit'])) {
         $age_limit = sanitize_text_field($_POST['age_limit']);
-        if (!empty($age_limit)) {
+        // Validate against allowed age presets
+        $allowed_ages = array('15', '16', '18', '21');
+        if (!empty($age_limit) && in_array($age_limit, $allowed_ages)) {
             update_term_meta($term_id, '_age_limit', $age_limit);
         } else {
             delete_term_meta($term_id, '_age_limit');
@@ -1582,8 +1663,20 @@ add_filter('manage_product_cat_custom_column', 'idguard_populate_category_column
 
 // Ajax handler for dismissing notices
 function idguard_dismiss_notice() {
+    // Security check: verify nonce
+    check_ajax_referer('idguard_dismiss_notice', 'nonce');
+    
+    // Security check: verify user has capability
+    if (!current_user_can('manage_options')) {
+        wp_die('Insufficient privileges');
+    }
+    
     if (isset($_POST['notice'])) {
-        update_option('dismissed-' . sanitize_text_field($_POST['notice']), true);
+        $notice = sanitize_text_field($_POST['notice']);
+        // Validate notice name to prevent arbitrary option names
+        if (in_array($notice, ['idguard_notice'])) {
+            update_option('dismissed-' . $notice, true);
+        }
     }
     wp_die();
 }
@@ -1601,7 +1694,8 @@ function idguard_dismiss_notice_script() {
                 type: 'POST',
                 data: {
                     action: 'idguard_dismiss_notice',
-                    notice: notice
+                    notice: notice,
+                    nonce: '<?php echo wp_create_nonce('idguard_dismiss_notice'); ?>'
                 }
             });
         });
@@ -1662,3 +1756,32 @@ function idguard_deactivate() {
     delete_transient('idguard_plugin_activated');
 }
 register_deactivation_hook(__FILE__, 'idguard_deactivate');
+
+// Helper function to safely check if WooCommerce cart exists and has items
+function idguard_has_cart_items() {
+    if (!function_exists('WC') || !WC()->cart) {
+        return false;
+    }
+    
+    return !WC()->cart->is_empty();
+}
+
+// Helper function to safely get cart items
+function idguard_get_cart_items() {
+    if (!function_exists('WC') || !WC()->cart) {
+        return array();
+    }
+    
+    return WC()->cart->get_cart();
+}
+
+// Helper function to get allowed age presets for IDguard API
+function idguard_get_allowed_ages() {
+    return array('15', '16', '18', '21');
+}
+
+// Helper function to validate age limit against presets
+function idguard_validate_age_limit($age_limit) {
+    $allowed_ages = idguard_get_allowed_ages();
+    return in_array($age_limit, $allowed_ages) ? $age_limit : '';
+}

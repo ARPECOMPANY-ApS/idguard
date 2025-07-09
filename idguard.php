@@ -24,36 +24,6 @@ define('IDGUARD_MIN_PHP_VER', '5.6');
 define('IDGUARD_MIN_WP_VER', '5.0');
 define('IDGUARD_MIN_WC_VER', '4.0');
 
-// --- Domæne-autorisation (MIDLERTIDIGT DEAKTIVERET) ---
-function idguard_is_authorized_domain() {
-    // MIDLERTIDIGT: Returner altid true for at tillade alle domæner
-    return true;
-    
-    /*
-    $domain = parse_url(home_url(), PHP_URL_HOST);
-    $transient_key = 'idguard_domain_auth_' . md5($domain);
-    $cached = get_transient($transient_key);
-    if ($cached !== false) {
-        error_log('[IDguard] Domæne: ' . $domain . ' (cached: ' . $cached . ')');
-        return $cached === '1';
-    }
-    $response = wp_remote_get('https://assets.idguard.dk/api/authorize', ['timeout' => 8]);
-    $authorized = false;
-    if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200) {
-        $body = wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
-        error_log('[IDguard] Domæne: ' . $domain . ' | Svar fra server: ' . $body);
-        if (isset($data['authorized']) && $data['authorized'] === true) {
-            $authorized = true;
-        }
-    } else {
-        error_log('[IDguard] Domæne: ' . $domain . ' | FEJL ved kontakt til server.');
-    }
-    set_transient($transient_key, $authorized ? '1' : '0', 60*30); // 30 min cache
-    return $authorized;
-    */
-}
-
 // Redirect to the settings page after activation
 function idguard_redirect_after_activation() {
     if (get_option('idguard_plugin_activated', false)) {
@@ -78,11 +48,8 @@ add_action('upgrader_process_complete', function($upgrader, $options) {
 }, 10, 2);
 
 function my_custom_plugin_settings_link($links) {
-    // Vis kun link hvis domænet er autoriseret
-    if (function_exists('idguard_is_authorized_domain') && idguard_is_authorized_domain()) {
-        $settings_link = '<a href="' . admin_url('admin.php?page=idguard') . '">' . idguard_dk_text('⛨ Konfigurer IDguard') . '</a>';
-        array_unshift($links, $settings_link);
-    }
+    $settings_link = '<a href="' . admin_url('admin.php?page=idguard') . '">' . idguard_dk_text('⛨ Konfigurer IDguard') . '</a>';
+    array_unshift($links, $settings_link);
     return $links;
 }
 
@@ -111,14 +78,12 @@ function display_id_token_in_admin_order_meta($order) {
 
 // Function to display the admin notice
 function idguard_admin_notice() {
-    // Vis kun hvis domænet er autoriseret
-    if (!idguard_is_authorized_domain()) return;
     if ( ! get_option('dismissed-idguard_notice', false) ) {
         ?>
         <div class="notice notice-success is-dismissible" data-notice="idguard_notice">
             <p><?php _e('🎉 Tak fordi du har valgt IDguard! Gennemgå venligst dine indstillinger for at sikre, at alt er sat korrekt op.', 'idguard'); ?></p>
             <p>
-                <a href="<?php echo admin_url('options-general.php?page=idguard'); ?>" class="button button-primary">
+                <a href="<?php echo admin_url('admin.php?page=idguard'); ?>" class="button button-primary">
                     <?php _e('Konfigurer IDguard', 'idguard'); ?>
                 </a>
             </p>
@@ -128,61 +93,9 @@ function idguard_admin_notice() {
 }
 add_action('admin_notices', 'idguard_admin_notice');
 
-// Pænere og mere informativ "ikke autoriseret" notice
-add_action('admin_notices', function() {
-    if (!idguard_is_authorized_domain()) {
-        echo '<style>
-        .idguard-unauth-notice {
-            background: linear-gradient(90deg, #fff0f0 0%, #ffeaea 100%);
-            border-left: 6px solid #cf1322;
-            border-radius: 7px;
-            box-shadow: 0 2px 12px rgba(207,19,34,0.07);
-            padding: 22px 28px 18px 28px;
-            margin: 30px 0 25px 0;
-            font-size: 1.08em;
-            color: #222;
-        }
-        .idguard-unauth-notice h2 {
-            color: #cf1322;
-            margin-top: 0;
-            font-size: 1.5em;
-            display: flex;
-            align-items: center;
-            gap: 0.5em;
-        }
-        .idguard-unauth-notice .idguard-support-btn {
-            background: #cf1322;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            padding: 0.6em 1.5em;
-            font-size: 1em;
-            margin-top: 12px;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .idguard-unauth-notice .idguard-support-btn:hover {
-            background: #a50e1a;
-        }
-        </style>';
-        echo '<div class="idguard-unauth-notice">
-            <h2>🔒 IDguard er ikke autoriseret til dette domæne</h2>
-            <p><b>Plugin-funktionalitet er deaktiveret.</b></p>
-            <ul style="margin: 12px 0 0 18px;">
-                <li>Dette domæne er ikke godkendt til brug af IDguard.</li>
-                <li>Kontakt support for at få adgang eller høre mere om licens.</li>
-            </ul>
-            <a href="mailto:kontakt@arpecompany.dk" class="idguard-support-btn">📬 Kontakt support</a>
-        </div>';
-    }
-});
-
 function idguard_init() {
-    // Indlæs kun script på WooCommerce checkout-siden OG hvis domænet er autoriseret
+    // Indlæs kun script på WooCommerce checkout-siden
     if (!function_exists('is_checkout') || !is_checkout()) {
-        return;
-    }
-    if (!idguard_is_authorized_domain()) {
         return;
     }
     $checkout_url = wc_get_checkout_url();
@@ -1482,15 +1395,7 @@ function idguard_support_page() {
                     
                     <h4><?php _e('Plugin status', 'idguard'); ?></h4>
                     <p>
-                        <strong><?php _e('Version:', 'idguard'); ?></strong> 2.1.1.61<br>
-                        <strong><?php _e('Domæne status:', 'idguard'); ?></strong>
-                        <?php if (idguard_is_authorized_domain()): ?>
-                            <span class="status-indicator status-active"><?php _e('Autoriseret', 'idguard'); ?></span>
-                        <?php else: ?>
-                            <span class="status-indicator status-inactive"><?php _e('Ikke autoriseret', 'idguard'); ?></span>
-                        <?php endif; ?>
-                    </p>
-                    <p>
+                        <strong><?php _e('Version:', 'idguard'); ?></strong> 2.1.1.62<br>
                         <strong><?php _e('WooCommerce:', 'idguard'); ?></strong>
                         <?php if (class_exists('WooCommerce')): ?>
                             <span class="status-indicator status-active"><?php _e('Aktiv', 'idguard'); ?></span>
@@ -1755,8 +1660,5 @@ add_action('plugins_loaded', 'idguard_check_requirements');
 function idguard_deactivate() {
     // Clean up any temporary data
     delete_transient('idguard_plugin_activated');
-    // Clear domain authorization cache
-    $domain = parse_url(home_url(), PHP_URL_HOST);
-    delete_transient('idguard_domain_auth_' . md5($domain));
 }
 register_deactivation_hook(__FILE__, 'idguard_deactivate');

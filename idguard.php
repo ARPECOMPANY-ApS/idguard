@@ -48,7 +48,7 @@ add_action('upgrader_process_complete', function($upgrader, $options) {
 }, 10, 2);
 
 function my_custom_plugin_settings_link($links) {
-    $settings_link = '<a href="' . admin_url('admin.php?page=idguard') . '">' . idguard_dk_text('⛨ Konfigurer IDguard') . '</a>';
+    $settings_link = '<a href="' . admin_url('admin.php?page=idguard') . '">' . idguard_dk_text('Konfigurer IDguard') . '</a>';
     array_unshift($links, $settings_link);
     return $links;
 }
@@ -81,7 +81,7 @@ function idguard_admin_notice() {
     if ( ! get_option('dismissed-idguard_notice', false) ) {
         ?>
         <div class="notice notice-success is-dismissible" data-notice="idguard_notice">
-            <p><?php _e('🎉 Tak fordi du har valgt IDguard! Gennemgå venligst dine indstillinger for at sikre, at alt er sat korrekt op.', 'idguard'); ?></p>
+            <p><?php _e('Tak fordi du har valgt IDguard! Gennemgå venligst dine indstillinger for at sikre, at alt er sat korrekt op.', 'idguard'); ?></p>
             <p>
                 <a href="<?php echo admin_url('admin.php?page=idguard'); ?>" class="button button-primary">
                     <?php _e('Konfigurer IDguard', 'idguard'); ?>
@@ -196,17 +196,17 @@ function idguard_settings_page() {
     if (isset($_POST['submit']) && wp_verify_nonce($_POST['_wpnonce'], 'idguard_general_settings-options')) {
         $mode = sanitize_text_field($_POST['idguard_age_verification_mode']);
         $global_age = sanitize_text_field($_POST['idguard_global_age_limit']);
-        
         // Validate global age limit against allowed presets
         $allowed_ages = array('15', '16', '18', '21');
         if (!in_array($global_age, $allowed_ages)) {
             $global_age = '18'; // Default to 18 if invalid
         }
-        
         update_option('idguard_age_verification_mode', $mode);
         update_option('idguard_global_age_limit', $global_age);
-        
-        echo '<div class="notice notice-success"><p>' . __('Indstillinger gemt!', 'idguard') . '</p></div>';
+        // Show notice above the page content, not inside the form
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-success is-dismissible"><p>' . __('Indstillinger gemt!', 'idguard') . '</p></div>';
+        });
     }
     
     $current_mode = get_option('idguard_age_verification_mode', 'off');
@@ -340,55 +340,55 @@ function idguard_settings_page() {
     <div class="wrap">
         <?php if (!get_option('idguard_onboarding_completed', false)): ?>
         <div class="idguard-welcome-banner">
-            <p><strong>🎉 Velkommen til IDguard!</strong> Opsæt automatisk aldersverifikation på få minutter.</p>
+            <p><strong>Velkommen til IDguard!</strong> Opsæt automatisk aldersverifikation på få minutter.</p>
         </div>
         <?php endif; ?>
-        
+
         <div class="idguard-admin">
             <h1><span style="color:#004cb8;">IDguard</span> <?php _e('Indstillinger', 'idguard'); ?></h1>
-            
+
             <form method="post" action="">
                 <?php wp_nonce_field('idguard_general_settings-options'); ?>
-                
+
                 <h2><?php _e('Aldersverifikations-metode', 'idguard'); ?></h2>
                 <p><?php _e('Vælg hvordan IDguard skal håndtere aldersverifikation på din webshop.', 'idguard'); ?></p>
-                    
-                    <div class="idguard-mode-card <?php echo $current_mode === 'off' ? 'selected' : ''; ?>" data-mode="off">
-                        <h3>Deaktiveret <span class="idguard-status status-disabled">Inaktiv</span></h3>
-                        <p>Ingen aldersverifikation. Alle kunder kan gennemføre køb uden begrænsninger.</p>
-                        <input type="radio" name="idguard_age_verification_mode" value="off" <?php checked($current_mode, 'off'); ?> style="margin-top: 1em;">
+
+                <div class="idguard-mode-card <?php echo $current_mode === 'off' ? 'selected' : ''; ?>" data-mode="off">
+                    <h3>Deaktiveret <span class="idguard-status status-disabled">Inaktiv</span></h3>
+                    <p>Ingen aldersverifikation. Alle kunder kan gennemføre køb uden begrænsninger.</p>
+                    <input type="radio" name="idguard_age_verification_mode" value="off" <?php checked($current_mode, 'off'); ?> style="margin-top: 1em;">
+                </div>
+
+                <div class="idguard-mode-card <?php echo $current_mode === 'global' ? 'selected' : ''; ?>" data-mode="global">
+                    <h3>Global aldersgrænse <span class="idguard-status status-enabled">Aktiv</span></h3>
+                    <p>Alle produkter på webshop'en kræver samme aldersverifikation. Enkel opsætning.</p>
+                    <input type="radio" name="idguard_age_verification_mode" value="global" <?php checked($current_mode, 'global'); ?> style="margin-top: 1em;">
+
+                    <div class="idguard-global-age <?php echo $current_mode === 'global' ? 'show' : ''; ?>">
+                        <label><strong>Minimum alder:</strong></label>
+                        <select name="idguard_global_age_limit" class="idguard-age-select">
+                            <option value="15" <?php selected($current_global_age, '15'); ?>>15 år</option>
+                            <option value="16" <?php selected($current_global_age, '16'); ?>>16 år</option>
+                            <option value="18" <?php selected($current_global_age, '18'); ?>>18 år</option>
+                            <option value="21" <?php selected($current_global_age, '21'); ?>>21 år</option>
+                        </select>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 0.5em;">Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.</p>
                     </div>
-                    
-                    <div class="idguard-mode-card <?php echo $current_mode === 'global' ? 'selected' : ''; ?>" data-mode="global">
-                        <h3>Global aldersgrænse <span class="idguard-status status-enabled">Aktiv</span></h3>
-                        <p>Alle produkter på webshop'en kræver samme aldersverifikation. Enkel opsætning.</p>
-                        <input type="radio" name="idguard_age_verification_mode" value="global" <?php checked($current_mode, 'global'); ?> style="margin-top: 1em;">
-                        
-                        <div class="idguard-global-age <?php echo $current_mode === 'global' ? 'show' : ''; ?>">
-                            <label><strong>Minimum alder:</strong></label>
-                            <select name="idguard_global_age_limit" class="idguard-age-select">
-                                <option value="15" <?php selected($current_global_age, '15'); ?>>15 år</option>
-                                <option value="16" <?php selected($current_global_age, '16'); ?>>16 år</option>
-                                <option value="18" <?php selected($current_global_age, '18'); ?>>18 år</option>
-                                <option value="21" <?php selected($current_global_age, '21'); ?>>21 år</option>
-                            </select>
-                            <p style="font-size: 0.9em; color: #666; margin-top: 0.5em;">Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.</p>
-                        </div>
+                </div>
+
+                <div class="idguard-mode-card <?php echo $current_mode === 'individual' ? 'selected' : ''; ?>" data-mode="individual">
+                    <h3>Individuelle aldersgrænser <span class="idguard-status status-enabled">Avanceret</span></h3>
+                    <p>Sæt forskellige aldersgrænser på produkter og kategorier. Fuld kontrol over hvad der kræver verifikation.</p>
+                    <input type="radio" name="idguard_age_verification_mode" value="individual" <?php checked($current_mode, 'individual'); ?> style="margin-top: 1em;">
+
+                    <?php if ($current_mode === 'individual'): ?>
+                    <div style="margin-top: 1em;">
+                        <a href="<?php echo admin_url('edit.php?post_type=product'); ?>" class="button">Rediger produkter</a>
+                        <a href="<?php echo admin_url('edit-tags.php?taxonomy=product_cat&post_type=product'); ?>" class="button">Rediger kategorier</a>
                     </div>
-                    
-                    <div class="idguard-mode-card <?php echo $current_mode === 'individual' ? 'selected' : ''; ?>" data-mode="individual">
-                        <h3>Individuelle aldersgrænser <span class="idguard-status status-enabled">Avanceret</span></h3>
-                        <p>Sæt forskellige aldersgrænser på produkter og kategorier. Fuld kontrol over hvad der kræver verifikation.</p>
-                        <input type="radio" name="idguard_age_verification_mode" value="individual" <?php checked($current_mode, 'individual'); ?> style="margin-top: 1em;">
-                        
-                        <?php if ($current_mode === 'individual'): ?>
-                        <div style="margin-top: 1em;">
-                            <a href="<?php echo admin_url('edit.php?post_type=product'); ?>" class="button">Rediger produkter</a>
-                            <a href="<?php echo admin_url('edit-tags.php?taxonomy=product_cat&post_type=product'); ?>" class="button">Rediger kategorier</a>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                
+                    <?php endif; ?>
+                </div>
+
                 <div class="idguard-help-text">
                     <h4>Tip til opsætning</h4>
                     <ul>
@@ -398,25 +398,33 @@ function idguard_settings_page() {
                         <li><strong>Test altid:</strong> Brug preview-funktionen til at teste før du aktiverer</li>
                     </ul>
                 </div>
-                
+
                 <?php submit_button(__('Gem indstillinger', 'idguard'), 'primary large', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;margin-top:2em;')); ?>
             </form>
-            
+
             <div style="margin-top: 2em; text-align: center;">
                 <button onclick="idguardShowPopup()" class="idguard-preview-btn">Forhåndsvis popup</button>
                 <p style="color:#666; font-size:0.9em; margin-top:0.5em;">Test hvordan popup'en vil se ud for dine kunder</p>
             </div>
-                </div>
-                
-                <?php submit_button(__('Gem indstillinger', 'idguard'), 'primary large', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;margin-top:2em;')); ?>
-            </form>
-            
-            <div style="margin-top: 2em; text-align: center;">
-                <button onclick="idguardShowPopup()" class="idguard-preview-btn">👁️ Forhåndsvis popup</button>
-                <p style="color:#666; font-size:0.9em; margin-top:0.5em;">Test hvordan popup'en vil se ud for dine kunder</p>
-            </div>
         </div>
     </div>
+
+    <script>
+    // Remove WordPress footer and version from inside plugin settings
+    document.addEventListener('DOMContentLoaded', function() {
+        var wpFooter = document.getElementById('footer-left');
+        if (wpFooter) wpFooter.style.display = 'none';
+        var wpVersion = document.getElementById('footer-upgrade');
+        if (wpVersion) wpVersion.style.display = 'none';
+        // Remove "Thank you for creating with WordPress" if present
+        var all = document.querySelectorAll('p, div');
+        all.forEach(function(el) {
+            if (el.textContent && el.textContent.match(/Thank you for creating with WordPress|WordPress version/i)) {
+                el.style.display = 'none';
+            }
+        });
+    });
+    </script>
     
     <script>
     jQuery(document).ready(function($) {
@@ -748,7 +756,7 @@ function idguard_popup_page() {
                         </div>
                         
                         <div class="help-text">
-                            <strong>💡 Tips til bedre brugeroplevelse:</strong>
+                            <strong>Tips til bedre brugeroplevelse:</strong>
                             <ul>
                                 <li>Hold beskederne korte og tydelige</li>
                                 <li>Brug farver der matcher dit brand</li>
@@ -768,11 +776,18 @@ function idguard_popup_page() {
                 </div>
                 
                 <div class="popup-preview">
-                    <div id="preview-popup" class="preview-popup-content">
-                        <h3 id="preview-title"><?php echo esc_html($title); ?></h3>
-                        <p id="preview-message"><?php echo esc_html($message); ?></p>
-                        <button id="preview-confirm" class="preview-button"><?php echo esc_html($confirm_text); ?></button>
-                        <button id="preview-cancel" class="preview-button"><?php echo esc_html($cancel_text); ?></button>
+                    <div id="preview-popup" class="preview-popup-content" style="position:relative; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 20px; padding: 40px 24px 32px 24px; max-width: 400px; margin: 0 auto; background: linear-gradient(145deg, #ffffff, #e6e6e6);">
+                        <h2 id="preview-title" style="font-size:26px; color:#333; margin-bottom:10px; font-weight:600; letter-spacing:0.01em; line-height:1.2;"></h2>
+                        <p id="preview-message" style="font-size:16px; color:#555; margin-bottom:20px; line-height:1.5;"></p>
+                        <button id="preview-confirm" class="idGuardButton idGuardVerifyButton preview-button" style="margin-top:8px; padding:13px 25px; border:none; cursor:pointer; font-size:16px; border-radius:8px; transition:background-color 0.3s,transform 0.2s,box-shadow 0.3s; outline:none; display:inline-flex; align-items:center; justify-content:center; font-weight:400; letter-spacing:0.5px; width:100%; position:relative; overflow:hidden;">
+                            <span class="mitid-logo-container" style="position:absolute; left:0; top:0; bottom:0; width:50px; display:flex; align-items:center; justify-content:center; border-top-left-radius:8px; border-bottom-left-radius:8px; transition:background-color 0.3s; padding:0.5rem; background-color:#003a9b;">
+                                <img src="<?php echo plugins_url('logo-mitid.webp', __FILE__); ?>" class="mitid-logo" style="height:28px; width:auto; filter:brightness(0) invert(1);">
+                            </span>
+                            <span class="verify-text" style="margin-left:40px; width:100%; text-align:center;"></span>
+                        </button>
+                        <button id="preview-cancel" class="idGuardButton idGuardCancelButton preview-button" style="margin-top:8px; padding:13px 25px; border:none; cursor:pointer; font-size:16px; border-radius:8px; transition:background-color 0.3s,transform 0.2s,box-shadow 0.3s; outline:none; display:inline-flex; align-items:center; justify-content:center; font-weight:400; letter-spacing:0.5px; width:100%; position:relative; overflow:hidden; background:#d6d6d6; color:#000;">
+                            <span class="verify-text" style="width:100%; text-align:center;"></span>
+                        </button>
                     </div>
                 </div>
                 
@@ -818,22 +833,33 @@ function idguard_popup_page() {
         const verifyBtnTextColor = document.getElementById('verify_btn_text_color').value;
         const cancelBtnColor = document.getElementById('cancel_btn_color').value;
         const cancelBtnTextColor = document.getElementById('cancel_btn_text_color').value;
-        
+
         // Update content
         document.getElementById('preview-title').textContent = title;
         document.getElementById('preview-message').textContent = message;
-        document.getElementById('preview-confirm').textContent = confirmText;
-        document.getElementById('preview-cancel').textContent = cancelText;
-        
-        // Update colors
-        preview.style.backgroundColor = bgColor;
+        // Confirm button text inside .verify-text span
+        document.querySelector('#preview-confirm .verify-text').textContent = confirmText;
+        // Cancel button text inside .verify-text span
+        document.querySelector('#preview-cancel .verify-text').textContent = cancelText;
+
+        // Update colors and styles
+        preview.style.background = `linear-gradient(145deg, #ffffff, #e6e6e6)`;
         preview.style.color = textColor;
-        
-        document.getElementById('preview-confirm').style.backgroundColor = verifyBtnColor;
-        document.getElementById('preview-confirm').style.color = verifyBtnTextColor;
-        
-        document.getElementById('preview-cancel').style.backgroundColor = cancelBtnColor;
-        document.getElementById('preview-cancel').style.color = cancelBtnTextColor;
+        preview.style.borderRadius = '20px';
+        preview.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)';
+
+        // Confirm button
+        const confirmBtn = document.getElementById('preview-confirm');
+        confirmBtn.style.backgroundColor = verifyBtnColor;
+        confirmBtn.style.color = verifyBtnTextColor;
+        // MitID logo container
+        const mitidLogo = confirmBtn.querySelector('.mitid-logo-container');
+        mitidLogo.style.backgroundColor = darkenColor(verifyBtnColor, 20);
+
+        // Cancel button
+        const cancelBtn = document.getElementById('preview-cancel');
+        cancelBtn.style.backgroundColor = cancelBtnColor;
+        cancelBtn.style.color = cancelBtnTextColor;
     }
     
     // Initialize preview
@@ -842,126 +868,109 @@ function idguard_popup_page() {
     // Add preview popup function for admin
     window.idguardShowPopup = function() {
         // Get current settings
-        const title = document.getElementById('popup_title').value || 'Din ordre indeholder aldersbegrænsede varer';
-        const message = document.getElementById('popup_message').value || 'Den danske lovgivning kræver at vi kontrollerer din alder med MitID inden du kan købe aldersbegrænsede varer.';
-        const confirmText = document.getElementById('confirm_button').value || 'Fortsæt købet';
-        const cancelText = document.getElementById('cancel_button').value || 'Gå tilbage';
-        const textColor = document.getElementById('text_color').value || '#000000';
-        const bgColor = document.getElementById('bg_color').value || '#ffffff';
-        const verifyBtnColor = document.getElementById('verify_btn_color').value || '#004cb8';
-        const verifyBtnTextColor = document.getElementById('verify_btn_text_color').value || '#ffffff';
-        const cancelBtnColor = document.getElementById('cancel_btn_color').value || '#d6d6d6';
-        const cancelBtnTextColor = document.getElementById('cancel_btn_text_color').value || '#000000';
+        const title = document.getElementById('popup_title') ? document.getElementById('popup_title').value : 'Din ordre indeholder aldersbegrænsede varer';
+        const message = document.getElementById('popup_message') ? document.getElementById('popup_message').value : 'Den danske lovgivning kræver at vi kontrollerer din alder med MitID inden du kan købe aldersbegrænsede varer.';
+        const confirmText = document.getElementById('confirm_button') ? document.getElementById('confirm_button').value : 'Fortsæt købet';
+        const cancelText = document.getElementById('cancel_button') ? document.getElementById('cancel_button').value : 'Gå tilbage';
+        const textColor = document.getElementById('text_color') ? document.getElementById('text_color').value : '#000000';
+        const bgColor = document.getElementById('bg_color') ? document.getElementById('bg_color').value : '#ffffff';
+        const verifyBtnColor = document.getElementById('verify_btn_color') ? document.getElementById('verify_btn_color').value : '#004cb8';
+        const verifyBtnTextColor = document.getElementById('verify_btn_text_color') ? document.getElementById('verify_btn_text_color').value : '#ffffff';
+        const cancelBtnColor = document.getElementById('cancel_btn_color') ? document.getElementById('cancel_btn_color').value : '#d6d6d6';
+        const cancelBtnTextColor = document.getElementById('cancel_btn_text_color') ? document.getElementById('cancel_btn_text_color').value : '#000000';
         
-        // Create exact popup replica
-        var overlay = document.createElement('div');
-        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(2px);';
+        // Helper function to darken a color (from idguard.js)
+        function darkenColor(color, percent) {
+            if (color.startsWith('#')) {
+                let num = parseInt(color.replace("#", ""), 16);
+                let amt = Math.round(2.55 * percent);
+                let R = (num >> 16) - amt;
+                let G = (num >> 8 & 0x00FF) - amt;
+                let B = (num & 0x0000FF) - amt;
+                return "#" + (
+                    0x1000000 +
+                    (R < 0 ? 0 : R) * 0x10000 +
+                    (G < 0 ? 0 : G) * 0x100 +
+                    (B < 0 ? 0 : B)
+                ).toString(16).slice(1);
+            }
+            return color;
+        }
         
-        var popup = document.createElement('div');
-        popup.style.cssText = `
-            background: ${bgColor}; 
-            color: ${textColor};
-            padding: 2.5em 2em; 
-            border-radius: 16px; 
-            max-width: 420px; 
-            width: 90%; 
-            text-align: center; 
-            position: relative; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15); 
-            cursor: default;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        `;
+        // Create modal HTML exactly like in idguard.js
+        var modalHTML = '<div id="idGuardModal" class="idGuardModal" style="color: ' + textColor + ';">' +
+            '<div class="idGuardModalContent" style="background: ' + bgColor + '; color: ' + textColor + ';">' +
+                '<h2>' + title + '</h2>' +
+                '<p>' + message + '</p>' +
+                '<button id="verifyButton" class="idGuardButton idGuardVerifyButton" style="background-color: ' + verifyBtnColor + '; color: ' + verifyBtnTextColor + ';">' +
+                    '<span class="mitid-logo-container" style="background-color: ' + darkenColor(verifyBtnColor, 20) + ';">' +
+                        '<img src="<?php echo plugins_url('logo-mitid.webp', __FILE__); ?>" class="mitid-logo">' +
+                    '</span>' +
+                    '<span class="verify-text">' + confirmText + '</span>' +
+                '</button>' +
+                '<button id="cancelButton" class="idGuardButton idGuardCancelButton" style="background-color: ' + cancelBtnColor + '; color: ' + cancelBtnTextColor + ';">' + cancelText + '</button>' +
+            '</div>' +
+        '</div>';
         
-        var closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '&times;';
-        closeBtn.style.cssText = 'position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999; line-height: 1; opacity: 0.7; transition: opacity 0.2s;';
-        closeBtn.onmouseover = function() { this.style.opacity = '1'; };
-        closeBtn.onmouseout = function() { this.style.opacity = '0.7'; };
-        closeBtn.onclick = function() { overlay.remove(); };
+        // Add styles exactly like in idguard.js
+        var modalStyles = '<style>' +
+            '.idGuardModal { display: flex; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; animation: fadeIn 0.3s ease-in-out; backdrop-filter: blur(0.3rem); }' +
+            '.idGuardModalContent { background: linear-gradient(145deg, #ffffff, #e6e6e6); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); padding: 40px; text-align: center; max-width: 400px; width: 90%; animation: slideIn 0.3s ease-in-out forwards; position: relative; }' +
+            '.idGuardModalContent h2 { font-size: 26px; color: #333; margin-bottom: 10px; }' +
+            '.idGuardModalContent p { font-size: 16px; color: #555; margin-bottom: 20px; line-height: 1.5; }' +
+            '.idGuardButton, .idGuardCancelButton { margin-top: 8px; padding: 13px 25px; border: none; cursor: pointer; font-size: 16px; border-radius: 8px; transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s; outline: none; display: inline-flex; align-items: center; justify-content: center; font-weight: 400; letter-spacing: 0.5px; width: 100%; position: relative; overflow: hidden; }' +
+            '.idGuardButton:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0, 123, 255, 0.5); }' +
+            '.idGuardCancelButton:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(244, 67, 54, 0.5); }' +
+            '.mitid-logo-container { position: absolute; left: 0; top: 0; bottom: 0; width: 50px; display: flex; align-items: center; justify-content: center; border-top-left-radius: 8px; border-bottom-left-radius: 8px; transition: background-color 0.3s; padding: 0.5rem; }' +
+            '.mitid-logo { height: auto; width: auto; filter: brightness(0) invert(1); }' +
+            '.verify-text { margin-left: 40px; }' +
+            '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }' +
+            '@keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }' +
+        '</style>';
         
-        var titleEl = document.createElement('h2');
-        titleEl.textContent = title;
-        titleEl.style.cssText = `margin: 0 0 1em 0; font-size: 1.4em; font-weight: 600; color: ${textColor}; line-height: 1.3;`;
+        // Remove existing modal if any
+        var existingModal = document.getElementById('idGuardModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        var existingStyles = document.getElementById('idguard-modal-styles');
+        if (existingStyles) {
+            existingStyles.remove();
+        }
         
-        var messageEl = document.createElement('p');
-        messageEl.textContent = message;
-        messageEl.style.cssText = `margin: 0 0 2em 0; font-size: 1em; line-height: 1.5; color: ${textColor}; opacity: 0.9;`;
+        // Add styles to head
+        var styleElement = document.createElement('div');
+        styleElement.id = 'idguard-modal-styles';
+        styleElement.innerHTML = modalStyles;
+        document.head.appendChild(styleElement);
         
-        var buttonContainer = document.createElement('div');
-        buttonContainer.style.cssText = 'display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;';
+        // Add modal to body
+        var modalElement = document.createElement('div');
+        modalElement.innerHTML = modalHTML;
+        document.body.appendChild(modalElement.firstChild);
         
-        var confirmBtn = document.createElement('button');
-        confirmBtn.textContent = confirmText;
-        confirmBtn.style.cssText = `
-            background: ${verifyBtnColor}; 
-            color: ${verifyBtnTextColor}; 
-            border: none; 
-            padding: 12px 24px; 
-            border-radius: 8px; 
-            font-size: 1em; 
-            font-weight: 500; 
-            cursor: pointer; 
-            min-width: 140px;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        `;
-        confirmBtn.onmouseover = function() { 
-            this.style.transform = 'translateY(-1px)'; 
-            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-        };
-        confirmBtn.onmouseout = function() { 
-            this.style.transform = 'translateY(0)'; 
-            this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-        };
+        // Add event listeners
+        document.getElementById('cancelButton').addEventListener('click', function() {
+            document.getElementById('idGuardModal').remove();
+            document.getElementById('idguard-modal-styles').remove();
+        });
         
-        var cancelBtn = document.createElement('button');
-        cancelBtn.textContent = cancelText;
-        cancelBtn.style.cssText = `
-            background: ${cancelBtnColor}; 
-            color: ${cancelBtnTextColor}; 
-            border: none; 
-            padding: 12px 24px; 
-            border-radius: 8px; 
-            font-size: 1em; 
-            font-weight: 500; 
-            cursor: pointer; 
-            min-width: 140px;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        `;
-        cancelBtn.onmouseover = function() { 
-            this.style.transform = 'translateY(-1px)'; 
-            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-        };
-        cancelBtn.onmouseout = function() { 
-            this.style.transform = 'translateY(0)'; 
-            this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-        };
-        cancelBtn.onclick = function() { overlay.remove(); };
-        
-        buttonContainer.appendChild(confirmBtn);
-        buttonContainer.appendChild(cancelBtn);
-        
-        popup.appendChild(closeBtn);
-        popup.appendChild(titleEl);
-        popup.appendChild(messageEl);
-        popup.appendChild(buttonContainer);
-        
-        overlay.appendChild(popup);
-        document.body.appendChild(overlay);
-        
-        // Close on overlay click
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) {
-                overlay.remove();
+        document.getElementById('idGuardModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.remove();
+                document.getElementById('idguard-modal-styles').remove();
             }
         });
         
         // Close on escape key
         var escapeHandler = function(e) {
             if (e.key === 'Escape') {
-                overlay.remove();
-                document.removeEventListener('keydown', escapeHandler);
+                var modal = document.getElementById('idGuardModal');
+                if (modal) {
+                    modal.remove();
+                    document.getElementById('idguard-modal-styles').remove();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
             }
         };
         document.addEventListener('keydown', escapeHandler);
@@ -1096,37 +1105,37 @@ function idguard_documentation_page() {
         
         <div class="idguard-docs">
             <div class="alert-box alert-info">
-                <strong>💡 Velkommen til IDguard dokumentationen!</strong><br>
+                <strong>Velkommen til IDguard dokumentationen!</strong><br>
                 Her finder du guides, tips og svar på de mest stillede spørgsmål om automatisk aldersverifikation med MitID.
             </div>
             
             <div class="docs-grid">
                 <div class="docs-card">
-                    <h3>🚀 Kom i gang</h3>
+                    <h3>Kom i gang</h3>
                     <p>Grundlæggende opsætning af IDguard på din webshop.</p>
                     <a href="#getting-started" class="button">Læs guide</a>
                 </div>
                 
                 <div class="docs-card">
-                    <h3>⚙️ Konfiguration</h3>
+                    <h3>Konfiguration</h3>
                     <p>Detaljeret guide til indstillinger og tilpasning.</p>
                     <a href="#configuration" class="button">Se indstillinger</a>
                 </div>
                 
                 <div class="docs-card">
-                    <h3>🎨 Design tilpasning</h3>
+                    <h3>Design tilpasning</h3>
                     <p>Tilpas popup-design til dit brand og dine farver.</p>
                     <a href="#design" class="button">Læs om design</a>
                 </div>
                 
                 <div class="docs-card">
-                    <h3>🔧 Fejlfinding</h3>
+                    <h3>Fejlfinding</h3>
                     <p>Løsninger på almindelige problemer og fejl.</p>
                     <a href="#troubleshooting" class="button">Se fejlfinding</a>
                 </div>
             </div>
             
-            <h2 id="getting-started">🚀 Kom i gang med IDguard</h2>
+            <h2 id="getting-started">Kom i gang med IDguard</h2>
             
             <p>IDguard automatiserer aldersverifikation med MitID i din WooCommerce webshop. Følg denne opdaterede trin-for-trin guide for at komme i gang:</p>
             
@@ -1154,22 +1163,22 @@ function idguard_documentation_page() {
             </ol>
             
             <div class="alert-box alert-success">
-                <strong>✅ Pro tip:</strong> Start med global aldersgrænse for enkel opsætning, og skift til individuelle grænser hvis du har brug for mere kontrol.
+                <strong>Pro tip:</strong> Start med global aldersgrænse for enkel opsætning, og skift til individuelle grænser hvis du har brug for mere kontrol.
             </div>
             
-            <h2 id="configuration">⚙️ Konfiguration i detaljer</h2>
+            <h2 id="configuration">Konfiguration i detaljer</h2>
             
             <h3>Aldersverifikations metoder</h3>
             
             <div class="alert-box alert-info">
-                <strong>⚠️ Vigtig information om aldersgrænser:</strong><br>
+                <strong>Vigtig information om aldersgrænser:</strong><br>
                 IDguard understøtter kun følgende aldersgrænser via MitID API: <strong>15, 16, 18 og 21 år</strong>. Andre aldersgrænser er ikke mulige.
             </div>
             
-            <h4>🔴 Deaktiveret</h4>
+            <h4>Deaktiveret</h4>
             <p>Ingen aldersverifikation. Alle kunder kan købe alle produkter uden begrænsninger.</p>
             
-            <h4>🌐 Global aldersgrænse</h4>
+            <h4>Global aldersgrænse</h4>
             <p>Samme aldersgrænse for alle produkter på webshop'en. Simpel løsning for butikker hvor alle produkter kræver samme alder.</p>
             <ul>
                 <li>Vælg en af de tilgængelige aldersgrænser: 15, 16, 18 eller 21 år</li>
@@ -1177,7 +1186,7 @@ function idguard_documentation_page() {
                 <li>Hurtig opsætning</li>
             </ul>
             
-            <h4>🎯 Individuelle aldersgrænser</h4>
+            <h4>Individuelle aldersgrænser</h4>
             <p>Forskellige aldersgrænser på produkter og kategorier. Giver fuld kontrol over hvilke produkter der kræver verifikation.</p>
             <ul>
                 <li>Sæt aldersgrænse på individuelle produkter (15, 16, 18 eller 21 år)</li>
@@ -1208,13 +1217,13 @@ function idguard_documentation_page() {
                 <li>Gem kategorien</li>
             </ol>
             
-            <h2 id="design">🎨 Design tilpasning</h2>
+            <h2 id="design">Design tilpasning</h2>
             
             <p>IDguard version 2.1.1.63 kommer med en ny og forbedret designoplevelse med live forhåndsvisning og pænere kontrolelementer.</p>
 
-            <h3>🆕 Nyheder i UI/UX</h3>
+            <h3>Nyheder i UI/UX</h3>
             <div class="alert-box alert-success">
-                <strong>✨ Nye forbedringer i version 2.1.1.63:</strong>
+                <strong>Nye forbedringer i version 2.1.1.63:</strong>
                 <ul>
                     <li><strong>Live preview:</strong> Se dine designændringer øjeblikkeligt i sidebar'en til højre</li>
                     <li><strong>Pænere dropdowns:</strong> Alle aldersfelter har fået moderne styling med ikoner</li>
@@ -1259,7 +1268,78 @@ function idguard_documentation_page() {
                 <li><strong>Brugerdefineret:</strong> Til en specifik side du vælger</li>
             </ul>
             
-            <h2 id="troubleshooting">🔧 Fejlfinding</h2>
+            <h2 id="shortcode">IDguard Shortcode - Brug uden for WooCommerce</h2>
+            
+            <p>Fra version 2.1.1.64 kan du nu bruge IDguard popup'en overalt på din hjemmeside med en shortcode - ikke kun i WooCommerce checkout.</p>
+
+            <div class="alert-box alert-success">
+                <strong>Nyt i version 2.1.1.64:</strong> IDguard kan nu bruges på enhver side, blog post eller widget med en simpel shortcode.
+            </div>
+
+            <h3>Grundlæggende brug</h3>
+            <p>Den simpleste måde at tilføje en IDguard knap:</p>
+            <div class="code-block">
+                <code>[idguard]</code>
+            </div>
+            <p>Dette opretter en knap med standardindstillinger (18 års grænse).</p>
+
+            <h3>Avancerede parametre</h3>
+            <p>Du kan tilpasse shortcode'n med følgende parametre:</p>
+            
+            <div class="code-block">
+                <code>[idguard age="21" title="Aldersverifikation påkrævet" message="Du skal være 21 år for at fortsætte" button_text="Verificer mit CPR" redirect_url="https://minside.dk/vip-sektion"]</code>
+            </div>
+
+            <h4>Tilgængelige parametre:</h4>
+            <ul>
+                <li><strong>age:</strong> Aldersgrænse (15, 16, 18 eller 21) - Standard: 18</li>
+                <li><strong>title:</strong> Popup titel - Standard: Fra dine popup indstillinger</li>
+                <li><strong>message:</strong> Popup besked - Standard: Fra dine popup indstillinger</li>
+                <li><strong>button_text:</strong> Tekst på trigger-knappen - Standard: "Verificer min alder"</li>
+                <li><strong>redirect_url:</strong> Hvor brugeren sendes efter verifikation - Standard: Ingen omdirigering</li>
+                <li><strong>class:</strong> CSS klasse til styling af knappen - Standard: "idguard-shortcode"</li>
+            </ul>
+
+            <h3>Praktiske eksempler</h3>
+            
+            <h4>Eksklusivt indhold (18+)</h4>
+            <div class="code-block">
+                <code>[idguard age="18" title="Adgang til voksen indhold" message="Du skal være 18 år for at se dette indhold" button_text="Bekræft min alder" redirect_url="/voksen-indhold"]</code>
+            </div>
+
+            <h4>Alkohol webshop landing page</h4>
+            <div class="code-block">
+                <code>[idguard age="21" title="Velkommen til vores spiritus afdeling" message="For at handle spiritus skal du være mindst 21 år" button_text="Jeg er over 21 år" redirect_url="/alkohol-shop"]</code>
+            </div>
+
+            <h4>Simpel begrænset side</h4>
+            <div class="code-block">
+                <code>[idguard age="16" button_text="Fortsæt til siden"]</code>
+            </div>
+
+            <h3>Styling af shortcode knappen</h3>
+            <p>Du kan style knappen med CSS ved at målrette klassen:</p>
+            <div class="code-block">
+                <code>.idguard-shortcode {<br>
+    &nbsp;&nbsp;background: #ff6b35 !important;<br>
+    &nbsp;&nbsp;color: white !important;<br>
+    &nbsp;&nbsp;padding: 1em 2em;<br>
+    &nbsp;&nbsp;border-radius: 25px;<br>
+    &nbsp;&nbsp;font-weight: bold;<br>
+    &nbsp;&nbsp;box-shadow: 0 4px 15px rgba(255,107,53,0.3);<br>
+}</code>
+            </div>
+
+            <p>Eller brug en brugerdefineret klasse:</p>
+            <div class="code-block">
+                <code>[idguard class="min-special-knap"]</code>
+            </div>
+
+            <div class="alert-box alert-info">
+                <strong>Tips:</strong> Shortcode'n arver dine farve- og tekstindstillinger fra "Design & Tekster" siden, så popup'en ser ens ud overalt på sitet.
+            </div>
+            
+            <h2 id="troubleshooting">Fejlfinding</h2>
             
             <div class="faq-item">
                 <div class="faq-question" onclick="toggleFaq(this)">
@@ -1343,10 +1423,10 @@ function idguard_documentation_page() {
             </div>
             
             <div class="alert-box alert-warning">
-                <strong>⚠️ Vigtigt:</strong> IDguard håndterer kun den tekniske aldersverifikation. Det er webshoppens ansvar at sikre juridisk compliance med danske love om salg af aldersbegrænsede varer.
+                <strong>Vigtigt:</strong> IDguard håndterer kun den tekniske aldersverifikation. Det er webshoppens ansvar at sikre juridisk compliance med danske love om salg af aldersbegrænsede varer.
             </div>
             
-            <h2>🔗 Nyttige links</h2>
+            <h2>Nyttige links</h2>
             <ul>
                 <li><a href="<?php echo admin_url('admin.php?page=idguard'); ?>">IDguard Indstillinger</a></li>
                 <li><a href="<?php echo admin_url('admin.php?page=idguard_popup'); ?>">Design & Tekster</a></li>
@@ -1547,7 +1627,7 @@ function idguard_support_page() {
                         
                         <div class="form-group">
                             <label for="support_email"><?php _e('Din email', 'idguard'); ?> *</label>
-                            <input type="email" id="support_email" name="support_email" required>
+                                                       <input type="email" id="support_email" name="support_email" required>
                         </div>
                         
                         <div class="form-group">
@@ -1647,7 +1727,7 @@ function idguard_support_page() {
             </div>
             
             <div style="background: #e8f4fd; border-left: 4px solid #004cb8; padding: 1em; margin-top: 2em; border-radius: 0 6px 6px 0;">
-                <strong>💡 <?php _e('Tips til bedre support:', 'idguard'); ?></strong>
+                <strong><?php _e('Tips til bedre support:', 'idguard'); ?></strong>
                 <ul style="margin: 0.5em 0 0 1em;">
                     <li><?php _e('Beskriv problemet så detaljeret som muligt', 'idguard'); ?></li>
                     <li><?php _e('Inkluder skærmbilleder hvis relevant', 'idguard'); ?></li>
@@ -1659,6 +1739,150 @@ function idguard_support_page() {
     </div>
     <?php
 }
+
+// IDguard shortcode for use outside WooCommerce
+function idguard_shortcode($atts) {
+    $atts = shortcode_atts(array(
+        'age' => '18',
+        'title' => '',
+        'message' => '',
+        'button_text' => 'Verificer min alder',
+        'redirect_url' => '',
+        'class' => 'idguard-shortcode'
+    ), $atts);
+    
+    // Validate age limit
+    $allowed_ages = array('15', '16', '18', '21');
+    if (!in_array($atts['age'], $allowed_ages)) {
+        $atts['age'] = '18';
+    }
+    
+    // Use default texts if not provided
+    if (empty($atts['title'])) {
+        $atts['title'] = get_option('idguard_popup_title', 'Aldersverifikation påkrævet');
+    }
+    if (empty($atts['message'])) {
+        $atts['message'] = get_option('idguard_popup_message', 'Du skal være ' . $atts['age'] . ' år eller ældre for at fortsætte.');
+    }
+    
+    // Generate unique ID for this shortcode instance
+    $unique_id = 'idguard_' . uniqid();
+    
+    // Enqueue necessary scripts
+    wp_enqueue_script('idguard-shortcode', plugins_url('idguard.js', __FILE__), array('jquery'), '1.0.0', true);
+    
+    // Get customization options
+    $customization = array(
+        'popupTitle' => $atts['title'],
+        'popupMessage' => $atts['message'],
+        'confirmButton' => $atts['button_text'],
+        'cancelButton' => get_option('idguard_popup_cancel_button_text', 'Gå tilbage'),
+        'popupTextColor' => get_option('idguard_popup_text_color', '#000000'),
+        'popupBackgroundColor' => get_option('idguard_popup_background_color', '#ffffff'),
+        'popupVerifyButtonColor' => get_option('idguard_popup_verify_button_color', '#004cb8'),
+        'popupVerifyButtonTextColor' => get_option('idguard_popup_verify_button_text_color', '#ffffff'),
+        'popupCancelButtonColor' => get_option('idguard_popup_cancel_button_color', '#d6d6d6'),
+        'popupCancelButtonTextColor' => get_option('idguard_popup_cancel_button_text_color', '#000000'),
+        'requiredAge' => $atts['age'],
+        'redirectUrl' => $atts['redirect_url'],
+        'isShortcode' => true
+    );
+    
+    // Localize script for this specific shortcode
+    wp_localize_script('idguard-shortcode', 'idguardShortcodeData_' . $unique_id, array(
+        'customization' => $customization,
+        'nonce' => wp_create_nonce('idguard_nonce')
+    ));
+    
+    ob_start();
+    ?>
+    <button id="<?php echo esc_attr($unique_id); ?>" class="<?php echo esc_attr($atts['class']); ?> idguard-trigger-btn" 
+            style="background: <?php echo esc_attr(get_option('idguard_popup_verify_button_color', '#004cb8')); ?>; 
+                   color: <?php echo esc_attr(get_option('idguard_popup_verify_button_text_color', '#ffffff')); ?>;
+                   border: none; padding: 0.7em 1.2em; border-radius: 6px; cursor: pointer; font-size: 1em;">
+        <?php echo esc_html($atts['button_text']); ?>
+    </button>
+    
+    <script>
+    jQuery(document).ready(function($) {
+        $('#<?php echo esc_js($unique_id); ?>').on('click', function(e) {
+            e.preventDefault();
+            
+            var config = window.idguardShortcodeData_<?php echo esc_js($unique_id); ?>;
+            if (!config) return;
+            
+            // Create IDguard popup
+            var overlay = document.createElement('div');
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(2px);';
+            
+            var popup = document.createElement('div');
+            popup.style.cssText = 'background: ' + config.customization.popupBackgroundColor + '; color: ' + config.customization.popupTextColor + '; padding: 2.5em 2em; border-radius: 16px; max-width: 420px; width: 90%; text-align: center; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.15); cursor: default; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;';
+            
+            var closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.style.cssText = 'position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999; line-height: 1; opacity: 0.7; transition: opacity 0.2s;';
+            closeBtn.onclick = function() { overlay.remove(); };
+            
+            var titleEl = document.createElement('h2');
+            titleEl.textContent = config.customization.popupTitle;
+            titleEl.style.cssText = 'margin: 0 0 1em 0; font-size: 1.4em; font-weight: 600; color: ' + config.customization.popupTextColor + '; line-height: 1.3;';
+            
+            var messageEl = document.createElement('p');
+            messageEl.textContent = config.customization.popupMessage;
+            messageEl.style.cssText = 'margin: 0 0 2em 0; font-size: 1em; line-height: 1.5; color: ' + config.customization.popupTextColor + '; opacity: 0.9;';
+            
+            var buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = 'display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;';
+            
+            var confirmBtn = document.createElement('button');
+            confirmBtn.textContent = config.customization.confirmButton;
+            confirmBtn.style.cssText = 'background: ' + config.customization.popupVerifyButtonColor + '; color: ' + config.customization.popupVerifyButtonTextColor + '; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1em; font-weight: 500; cursor: pointer; min-width: 140px; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+            confirmBtn.onclick = function() {
+                // Trigger MitID verification (simplified for shortcode)
+                overlay.remove();
+                if (config.customization.redirectUrl) {
+                    window.location.href = config.customization.redirectUrl;
+                } else {
+                    alert('Aldersverifikation gennemført! (Demo mode)');
+                }
+            };
+            
+            var cancelBtn = document.createElement('button');
+            cancelBtn.textContent = config.customization.cancelButton;
+            cancelBtn.style.cssText = 'background: ' + config.customization.popupCancelButtonColor + '; color: ' + config.customization.popupCancelButtonTextColor + '; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1em; font-weight: 500; cursor: pointer; min-width: 140px; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+            cancelBtn.onclick = function() { overlay.remove(); };
+            
+            buttonContainer.appendChild(confirmBtn);
+            buttonContainer.appendChild(cancelBtn);
+            
+            popup.appendChild(closeBtn);
+            popup.appendChild(titleEl);
+            popup.appendChild(messageEl);
+            popup.appendChild(buttonContainer);
+            
+            overlay.appendChild(popup);
+            document.body.appendChild(overlay);
+            
+            // Close on overlay click
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) overlay.remove();
+            });
+            
+            // Close on escape key
+            var escapeHandler = function(e) {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+        });
+    });
+    </script>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('idguard', 'idguard_shortcode');
 
 // Check if current cart or product page has age-restricted items
 function idguard_get_required_age_for_verification() {

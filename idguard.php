@@ -3,7 +3,7 @@
  * Plugin Name: IDguard
  * Plugin URI: https://idguard.dk
  * Description: Foretag automatisk alderstjek med MitID ved betaling på WooCommerce-webshops
- * Version: 2.1.1.62
+ * Version: 2.1.1.63
  * Author: IDguard
  * Author URI: https://idguard.dk
  * Text Domain: idguard
@@ -300,6 +300,42 @@ function idguard_settings_page() {
     .idguard-preview-btn:hover {
         background: #003a9b;
     }
+    .idguard-age-select {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.8em 2.5em 0.8em 1em;
+        font-size: 1em;
+        font-weight: 500;
+        color: #1a202c;
+        min-width: 140px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+    .idguard-age-select:hover {
+        border-color: #004cb8;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+        box-shadow: 0 2px 8px rgba(0,76,184,0.1);
+    }
+    .idguard-age-select:focus {
+        border-color: #004cb8;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0,76,184,0.15);
+        background: white;
+    }
+    .idguard-age-select option {
+        padding: 0.5em;
+        font-weight: 500;
+    }
+    }
     </style>
     
     <div class="wrap">
@@ -331,11 +367,11 @@ function idguard_settings_page() {
                         
                         <div class="idguard-global-age <?php echo $current_mode === 'global' ? 'show' : ''; ?>">
                             <label><strong>Minimum alder:</strong></label>
-                            <select name="idguard_global_age_limit" class="age-input" style="width: auto; min-width: 80px;">
-                                <option value="15" <?php selected($current_global_age, '15'); ?>>15 år</option>
-                                <option value="16" <?php selected($current_global_age, '16'); ?>>16 år</option>
-                                <option value="18" <?php selected($current_global_age, '18'); ?>>18 år</option>
-                                <option value="21" <?php selected($current_global_age, '21'); ?>>21 år</option>
+                            <select name="idguard_global_age_limit" class="idguard-age-select">
+                                <option value="15" <?php selected($current_global_age, '15'); ?>>🔒 15 år</option>
+                                <option value="16" <?php selected($current_global_age, '16'); ?>>🔒 16 år</option>
+                                <option value="18" <?php selected($current_global_age, '18'); ?>>🔒 18 år</option>
+                                <option value="21" <?php selected($current_global_age, '21'); ?>>🔒 21 år</option>
                             </select>
                             <p style="font-size: 0.9em; color: #666; margin-top: 0.5em;">Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.</p>
                         </div>
@@ -442,7 +478,7 @@ function idguard_popup_page() {
     <style>
     .idguard-popup-admin {
         display: grid;
-        grid-template-columns: 1fr 400px;
+        grid-template-columns: 1fr 350px;
         gap: 2em;
         margin: 1em 0;
     }
@@ -455,11 +491,26 @@ function idguard_popup_page() {
     .idguard-preview-section {
         background: white;
         border-radius: 8px;
-        padding: 2em;
+        padding: 1.5em;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         position: sticky;
         top: 32px;
         height: fit-content;
+    }
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5em;
+        margin: 1.5em 0;
+        border-left: 4px solid #004cb8;
+    }
+    .form-section h3 {
+        margin-top: 0;
+        color: #004cb8;
+        font-size: 1.2em;
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
     }
     .form-group {
         margin-bottom: 1.5em;
@@ -469,10 +520,11 @@ function idguard_popup_page() {
         font-weight: 600;
         margin-bottom: 0.5em;
         color: #1a202c;
+        font-size: 0.95em;
     }
     .form-group input, .form-group textarea, .form-group select {
         width: 100%;
-        padding: 0.75em;
+        padding: 0.7em;
         border: 2px solid #e2e8f0;
         border-radius: 6px;
         font-size: 1em;
@@ -485,43 +537,51 @@ function idguard_popup_page() {
     }
     .form-group textarea {
         resize: vertical;
-        min-height: 100px;
+        min-height: 80px;
     }
     .color-input-group {
         display: flex;
         align-items: center;
-        gap: 0.5em;
+        gap: 0.8em;
     }
-    .color-preview {
-        width: 40px;
+    .color-input-group input[type="color"] {
+        width: 50px;
         height: 40px;
         border-radius: 6px;
         border: 2px solid #e2e8f0;
+        cursor: pointer;
+    }
+    .color-input-group input[type="text"] {
+        width: 90px;
+        font-family: monospace;
+        font-size: 0.9em;
     }
     .popup-preview {
-        border: 1px solid #e2e8f0;
+        border: 2px solid #e2e8f0;
         border-radius: 8px;
-        padding: 1.5em;
+        padding: 1em;
         background: #f8f9fa;
         text-align: center;
         margin-top: 1em;
     }
     .preview-popup-content {
         border-radius: 8px;
-        padding: 2em 1.5em;
-        max-width: 300px;
+        padding: 1.5em;
+        max-width: 280px;
         margin: 0 auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
     }
     .preview-button {
-        padding: 0.75em 1.5em;
+        padding: 0.6em 1.2em;
         border: none;
         border-radius: 6px;
-        font-size: 1em;
-        margin: 0.5em 0.25em;
+        font-size: 0.9em;
+        margin: 0.4em 0.2em;
         cursor: pointer;
-        min-width: 120px;
+        min-width: 100px;
         transition: all 0.3s ease;
+        font-weight: 500;
     }
     .preview-button:hover {
         transform: translateY(-1px);
@@ -529,24 +589,44 @@ function idguard_popup_page() {
     }
     .section-divider {
         border: none;
-        height: 2px;
+        height: 1px;
         background: linear-gradient(90deg, #004cb8, transparent);
-        margin: 2em 0;
+        margin: 0;
     }
     .help-text {
         background: #e8f4fd;
         border-left: 4px solid #004cb8;
         padding: 1em;
-        margin: 1em 0;
+        margin: 1.5em 0;
         border-radius: 0 6px 6px 0;
         font-size: 0.9em;
     }
     .custom-url-field {
         display: none;
         margin-top: 1em;
+        padding: 1em;
+        background: #f0f4ff;
+        border-radius: 6px;
+        border: 1px dashed #004cb8;
     }
     .custom-url-field.show {
         display: block;
+    }
+    .preview-header {
+        text-align: center;
+        margin-bottom: 1em;
+        padding-bottom: 1em;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .preview-header h3 {
+        margin: 0;
+        color: #004cb8;
+        font-size: 1.1em;
+    }
+    .preview-header p {
+        margin: 0.5em 0 0 0;
+        color: #666;
+        font-size: 0.85em;
     }
     @media (max-width: 1200px) {
         .idguard-popup-admin {
@@ -566,114 +646,118 @@ function idguard_popup_page() {
                 <form method="post" action="">
                     <?php wp_nonce_field('idguard_popup_settings-options'); ?>
                     
-                    <h2><?php _e('Popup Tekster', 'idguard'); ?></h2>
-                    
-                    <div class="form-group">
-                        <label for="popup_title"><?php _e('Popup Titel', 'idguard'); ?></label>
-                        <input type="text" id="popup_title" name="idguard_popup_title" value="<?php echo esc_attr($title); ?>" onchange="updatePreview()">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="popup_message"><?php _e('Popup Besked', 'idguard'); ?></label>
-                        <textarea id="popup_message" name="idguard_popup_message" onchange="updatePreview()"><?php echo esc_textarea($message); ?></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="confirm_button"><?php _e('Bekræft Knap Tekst', 'idguard'); ?></label>
-                        <input type="text" id="confirm_button" name="idguard_popup_button_text" value="<?php echo esc_attr($confirm_text); ?>" onchange="updatePreview()">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="cancel_button"><?php _e('Annuller Knap Tekst', 'idguard'); ?></label>
-                        <input type="text" id="cancel_button" name="idguard_popup_cancel_button_text" value="<?php echo esc_attr($cancel_text); ?>" onchange="updatePreview()">
-                    </div>
-                    
-                    <hr class="section-divider">
-                    
-                    <h2><?php _e('Popup Farver', 'idguard'); ?></h2>
-                    
-                    <div class="form-group">
-                        <label for="text_color"><?php _e('Tekst Farve', 'idguard'); ?></label>
-                        <div class="color-input-group">
-                            <input type="color" id="text_color" name="idguard_popup_text_color" value="<?php echo esc_attr($text_color); ?>" onchange="updatePreview()">
-                            <input type="text" value="<?php echo esc_attr($text_color); ?>" readonly style="width: 80px;">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="bg_color"><?php _e('Baggrund Farve', 'idguard'); ?></label>
-                        <div class="color-input-group">
-                            <input type="color" id="bg_color" name="idguard_popup_background_color" value="<?php echo esc_attr($bg_color); ?>" onchange="updatePreview()">
-                            <input type="text" value="<?php echo esc_attr($bg_color); ?>" readonly style="width: 80px;">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="verify_btn_color"><?php _e('Bekræft Knap Farve', 'idguard'); ?></label>
-                        <div class="color-input-group">
-                            <input type="color" id="verify_btn_color" name="idguard_popup_verify_button_color" value="<?php echo esc_attr($verify_btn_color); ?>" onchange="updatePreview()">
-                            <input type="text" value="<?php echo esc_attr($verify_btn_color); ?>" readonly style="width: 80px;">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="verify_btn_text_color"><?php _e('Bekræft Knap Tekst Farve', 'idguard'); ?></label>
-                        <div class="color-input-group">
-                            <input type="color" id="verify_btn_text_color" name="idguard_popup_verify_button_text_color" value="<?php echo esc_attr($verify_btn_text_color); ?>" onchange="updatePreview()">
-                            <input type="text" value="<?php echo esc_attr($verify_btn_text_color); ?>" readonly style="width: 80px;">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="cancel_btn_color"><?php _e('Annuller Knap Farve', 'idguard'); ?></label>
-                        <div class="color-input-group">
-                            <input type="color" id="cancel_btn_color" name="idguard_popup_cancel_button_color" value="<?php echo esc_attr($cancel_btn_color); ?>" onchange="updatePreview()">
-                            <input type="text" value="<?php echo esc_attr($cancel_btn_color); ?>" readonly style="width: 80px;">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="cancel_btn_text_color"><?php _e('Annuller Knap Tekst Farve', 'idguard'); ?></label>
-                        <div class="color-input-group">
-                            <input type="color" id="cancel_btn_text_color" name="idguard_popup_cancel_button_text_color" value="<?php echo esc_attr($cancel_btn_text_color); ?>" onchange="updatePreview()">
-                            <input type="text" value="<?php echo esc_attr($cancel_btn_text_color); ?>" readonly style="width: 80px;">
-                        </div>
-                    </div>
-                    
-                    <hr class="section-divider">
-                    
-                    <h2><?php _e('Annullering Indstillinger', 'idguard'); ?></h2>
-                    
-                    <div class="form-group">
-                        <label for="cancel_redirect"><?php _e('Når kunden annullerer alderstjekket, viderestil til:', 'idguard'); ?></label>
-                        <select id="cancel_redirect" name="idguard_cancel_redirect_option" onchange="toggleCustomUrl()">
-                            <option value="cart" <?php selected($cancel_redirect, 'cart'); ?>><?php _e('Indkøbskurv', 'idguard'); ?></option>
-                            <option value="home" <?php selected($cancel_redirect, 'home'); ?>><?php _e('Forside', 'idguard'); ?></option>
-                            <option value="custom" <?php selected($cancel_redirect, 'custom'); ?>><?php _e('Brugerdefineret URL', 'idguard'); ?></option>
-                        </select>
+                    <div class="form-section">
+                        <h3>✏️ <?php _e('Popup Tekster', 'idguard'); ?></h3>
                         
-                        <div class="custom-url-field <?php echo $cancel_redirect === 'custom' ? 'show' : ''; ?>">
-                            <label for="custom_url"><?php _e('Brugerdefineret URL:', 'idguard'); ?></label>
-                            <input type="url" id="custom_url" name="idguard_custom_cancel_url" value="<?php echo esc_attr($custom_url); ?>" placeholder="https://dinwebshop.dk/side">
+                        <div class="form-group">
+                            <label for="popup_title"><?php _e('Popup Titel', 'idguard'); ?></label>
+                            <input type="text" id="popup_title" name="idguard_popup_title" value="<?php echo esc_attr($title); ?>" onchange="updatePreview()" placeholder="Din ordre indeholder aldersbegrænsede varer">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="popup_message"><?php _e('Popup Besked', 'idguard'); ?></label>
+                            <textarea id="popup_message" name="idguard_popup_message" onchange="updatePreview()" placeholder="Den danske lovgivning kræver at vi kontrollerer din alder..."><?php echo esc_textarea($message); ?></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm_button"><?php _e('Bekræft Knap Tekst', 'idguard'); ?></label>
+                            <input type="text" id="confirm_button" name="idguard_popup_button_text" value="<?php echo esc_attr($confirm_text); ?>" onchange="updatePreview()" placeholder="Fortsæt købet">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cancel_button"><?php _e('Annuller Knap Tekst', 'idguard'); ?></label>
+                            <input type="text" id="cancel_button" name="idguard_popup_cancel_button_text" value="<?php echo esc_attr($cancel_text); ?>" onchange="updatePreview()" placeholder="Gå tilbage">
                         </div>
                     </div>
                     
-                    <div class="help-text">
-                        <strong>💡 Tips til bedre brugeroplevelse:</strong>
-                        <ul>
-                            <li>Hold beskederne korte og tydelige</li>
-                            <li>Brug farver der matcher dit brand</li>
-                            <li>Test popup'en på forskellige enheder</li>
-                        </ul>
+                    <div class="form-section">
+                        <h3>🎨 <?php _e('Popup Farver', 'idguard'); ?></h3>
+                        
+                        <div class="form-group">
+                            <label for="text_color"><?php _e('Tekst Farve', 'idguard'); ?></label>
+                            <div class="color-input-group">
+                                <input type="color" id="text_color" name="idguard_popup_text_color" value="<?php echo esc_attr($text_color); ?>" onchange="updatePreview()">
+                                <input type="text" value="<?php echo esc_attr($text_color); ?>" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="bg_color"><?php _e('Baggrund Farve', 'idguard'); ?></label>
+                            <div class="color-input-group">
+                                <input type="color" id="bg_color" name="idguard_popup_background_color" value="<?php echo esc_attr($bg_color); ?>" onchange="updatePreview()">
+                                <input type="text" value="<?php echo esc_attr($bg_color); ?>" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="verify_btn_color"><?php _e('Bekræft Knap Farve', 'idguard'); ?></label>
+                            <div class="color-input-group">
+                                <input type="color" id="verify_btn_color" name="idguard_popup_verify_button_color" value="<?php echo esc_attr($verify_btn_color); ?>" onchange="updatePreview()">
+                                <input type="text" value="<?php echo esc_attr($verify_btn_color); ?>" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="verify_btn_text_color"><?php _e('Bekræft Knap Tekst Farve', 'idguard'); ?></label>
+                            <div class="color-input-group">
+                                <input type="color" id="verify_btn_text_color" name="idguard_popup_verify_button_text_color" value="<?php echo esc_attr($verify_btn_text_color); ?>" onchange="updatePreview()">
+                                <input type="text" value="<?php echo esc_attr($verify_btn_text_color); ?>" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cancel_btn_color"><?php _e('Annuller Knap Farve', 'idguard'); ?></label>
+                            <div class="color-input-group">
+                                <input type="color" id="cancel_btn_color" name="idguard_popup_cancel_button_color" value="<?php echo esc_attr($cancel_btn_color); ?>" onchange="updatePreview()">
+                                <input type="text" value="<?php echo esc_attr($cancel_btn_color); ?>" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cancel_btn_text_color"><?php _e('Annuller Knap Tekst Farve', 'idguard'); ?></label>
+                            <div class="color-input-group">
+                                <input type="color" id="cancel_btn_text_color" name="idguard_popup_cancel_button_text_color" value="<?php echo esc_attr($cancel_btn_text_color); ?>" onchange="updatePreview()">
+                                <input type="text" value="<?php echo esc_attr($cancel_btn_text_color); ?>" readonly>
+                            </div>
+                        </div>
                     </div>
                     
-                    <?php submit_button(__('Gem Design Indstillinger', 'idguard'), 'primary large', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;margin-top:2em;')); ?>
+                    <div class="form-section">
+                        <h3>🔀 <?php _e('Annullering Indstillinger', 'idguard'); ?></h3>
+                        
+                        <div class="form-group">
+                            <label for="cancel_redirect"><?php _e('Når kunden annullerer alderstjekket, viderestil til:', 'idguard'); ?></label>
+                            <select id="cancel_redirect" name="idguard_cancel_redirect_option" onchange="toggleCustomUrl()">
+                                <option value="cart" <?php selected($cancel_redirect, 'cart'); ?>><?php _e('🛒 Indkøbskurv', 'idguard'); ?></option>
+                                <option value="home" <?php selected($cancel_redirect, 'home'); ?>><?php _e('🏠 Forside', 'idguard'); ?></option>
+                                <option value="custom" <?php selected($cancel_redirect, 'custom'); ?>><?php _e('🔗 Brugerdefineret URL', 'idguard'); ?></option>
+                            </select>
+                            
+                            <div class="custom-url-field <?php echo $cancel_redirect === 'custom' ? 'show' : ''; ?>">
+                                <label for="custom_url"><?php _e('Brugerdefineret URL:', 'idguard'); ?></label>
+                                <input type="url" id="custom_url" name="idguard_custom_cancel_url" value="<?php echo esc_attr($custom_url); ?>" placeholder="https://dinwebshop.dk/side">
+                            </div>
+                        </div>
+                        
+                        <div class="help-text">
+                            <strong>💡 Tips til bedre brugeroplevelse:</strong>
+                            <ul>
+                                <li>Hold beskederne korte og tydelige</li>
+                                <li>Brug farver der matcher dit brand</li>
+                                <li>Test popup'en på forskellige enheder</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <?php submit_button(__('💾 Gem Design Indstillinger', 'idguard'), 'primary large', 'submit', true, array('style' => 'font-size:1.1em;padding:0.8em 2em;background:#004cb8;border-radius:6px;border:none;margin-top:1.5em;')); ?>
                 </form>
             </div>
             
             <div class="idguard-preview-section">
-                <h3><?php _e('Live Forhåndsvisning', 'idguard'); ?></h3>
-                <p style="color:#666; font-size:0.9em;"><?php _e('Se hvordan popup\'en vil se ud for dine kunder', 'idguard'); ?></p>
+                <div class="preview-header">
+                    <h3>👁️ <?php _e('Live Forhåndsvisning', 'idguard'); ?></h3>
+                    <p><?php _e('Se hvordan popup\'en vil se ud for dine kunder', 'idguard'); ?></p>
+                </div>
                 
                 <div class="popup-preview">
                     <div id="preview-popup" class="preview-popup-content">
@@ -685,7 +769,7 @@ function idguard_popup_page() {
                 </div>
                 
                 <div style="margin-top: 1.5em; text-align: center;">
-                    <button onclick="idguardShowPopup()" class="button button-primary"><?php _e('Test Fuld Popup', 'idguard'); ?></button>
+                    <button onclick="idguardShowPopup()" class="button button-primary"><?php _e('🚀 Test Fuld Popup', 'idguard'); ?></button>
                     <p style="color:#666; font-size:0.8em; margin-top:0.5em;"><?php _e('Åbn popup i fuld størrelse', 'idguard'); ?></p>
                 </div>
             </div>
@@ -944,24 +1028,24 @@ function idguard_documentation_page() {
             
             <h2 id="getting-started">🚀 Kom i gang med IDguard</h2>
             
-            <p>IDguard automatiserer aldersverifikation med MitID i din WooCommerce webshop. Følg denne trin-for-trin guide for at komme i gang:</p>
+            <p>IDguard automatiserer aldersverifikation med MitID i din WooCommerce webshop. Følg denne opdaterede trin-for-trin guide for at komme i gang:</p>
             
             <ol class="step-list">
                 <li>
                     <strong>Vælg verifikationsmetode</strong><br>
-                    Gå til <em>IDguard → Indstillinger</em> og vælg mellem global aldersgrænse eller individuelle grænser pr. produkt/kategori.
+                    Gå til <em>IDguard → Indstillinger</em> og vælg mellem global aldersgrænse eller individuelle grænser pr. produkt/kategori. Den forbedrede brugerflade gør det nemt at se forskellen mellem metoderne.
                 </li>
                 <li>
-                    <strong>Sæt aldersgrænser</strong><br>
-                    Hvis du valgte "Global", sæt den ønskede aldersgrænse. Ved "Individuel" skal du sætte grænser på produkter og kategorier.
+                    <strong>Sæt aldersgrænser med nye dropdowns</strong><br>
+                    Hvis du valgte "Global", brug den nye pænere dropdown til at vælge aldersgrænse. Ved "Individuel" har produkt- og kategori-felterne også fået forbedret design med ikoner og bedre styling.
                 </li>
                 <li>
-                    <strong>Tilpas popup design</strong><br>
-                    Under <em>Design & Tekster</em> kan du tilpasse farver, tekster og omdirigering efter dit brand.
+                    <strong>Tilpas popup design med live preview</strong><br>
+                    Under <em>Design & Tekster</em> kan du nu se dine ændringer live i forhåndsvisningen til højre, mens du redigerer farver og tekster.
                 </li>
                 <li>
                     <strong>Test funktionaliteten</strong><br>
-                    Brug "Forhåndsvis popup" funktionen til at teste før du aktiverer.
+                    Brug både den lille preview og "Test Fuld Popup" funktionen til at teste før du aktiverer.
                 </li>
                 <li>
                     <strong>Gå live</strong><br>
@@ -1026,9 +1110,22 @@ function idguard_documentation_page() {
             
             <h2 id="design">🎨 Design tilpasning</h2>
             
-            <p>IDguard giver dig fuld kontrol over popup'ens udseende så den matcher dit brand perfekt.</p>
-            
+            <p>IDguard version 2.1.1.63 kommer med en ny og forbedret designoplevelse med live forhåndsvisning og pænere kontrolelementer.</p>
+
+            <h3>🆕 Nyheder i UI/UX</h3>
+            <div class="alert-box alert-success">
+                <strong>✨ Nye forbedringer i version 2.1.1.63:</strong>
+                <ul>
+                    <li><strong>Live preview:</strong> Se dine designændringer øjeblikkeligt i sidebar'en til højre</li>
+                    <li><strong>Pænere dropdowns:</strong> Alle aldersfelter har fået moderne styling med ikoner</li>
+                    <li><strong>Struktureret layout:</strong> Design & Tekster siden er nu opdelt i klare sektioner</li>
+                    <li><strong>Forbedret responsive:</strong> Bedre oplevelse på mobile enheder</li>
+                    <li><strong>Visuelle ikoner:</strong> 🔒 ikoner på alle aldersfelter for bedre genkendelighed</li>
+                </ul>
+            </div>
+
             <h3>Tekst tilpasning</h3>
+            <p>Den nye strukturerede layout gør det nemt at redigere popup tekster:</p>
             <ul>
                 <li><strong>Popup titel:</strong> Hovedoverskrift i popup'en</li>
                 <li><strong>Popup besked:</strong> Forklarende tekst til kunden</li>
@@ -1036,14 +1133,24 @@ function idguard_documentation_page() {
                 <li><strong>Annuller knap:</strong> Tekst på knappen der afbryder</li>
             </ul>
             
-            <h3>Farve tilpasning</h3>
+            <h3>Farve tilpasning med live preview</h3>
+            <p>Med den nye live forhåndsvisning kan du nu se dine farveændringer øjeblikkeligt:</p>
             <ul>
                 <li><strong>Tekst farve:</strong> Farve på al tekst i popup'en</li>
                 <li><strong>Baggrund:</strong> Popup'ens baggrundfarve</li>
                 <li><strong>Bekræft knap farver:</strong> Baggrund og tekst på "Fortsæt" knappen</li>
                 <li><strong>Annuller knap farver:</strong> Baggrund og tekst på "Tilbage" knappen</li>
             </ul>
-            
+
+            <h3>Forbedrede aldersfelter</h3>
+            <p>Alle steder hvor du kan sætte aldersgrænser har nu fået moderniseret design:</p>
+            <ul>
+                <li><strong>Global indstilling:</strong> Pæn dropdown i hovedindstillinger</li>
+                <li><strong>Produktsider:</strong> Moderne dropdown med 🔒 ikoner i WooCommerce produktredigering</li>
+                <li><strong>Kategorier:</strong> Konsistent styling på kategori-redigeringssider</li>
+                <li><strong>Hover-effekter:</strong> Diskrete animationer og farveændringer ved mus-over</li>
+            </ul>
+
             <h3>Omdirigeringsindstillinger</h3>
             <p>Vælg hvor kunden sendes hen hvis de annullerer aldersverifikationen:</p>
             <ul>
@@ -1088,16 +1195,34 @@ function idguard_documentation_page() {
             
             <div class="faq-item">
                 <div class="faq-question" onclick="toggleFaq(this)">
+                    Hvordan bruger jeg den nye live preview funktion?
+                    <span>+</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Live forhåndsvisning i version 2.1.1.63:</strong></p>
+                    <ul>
+                        <li>Gå til <em>IDguard → Design & Tekster</em></li>
+                        <li>Ret tekster eller farver i venstre side</li>
+                        <li>Se ændringerne øjeblikkeligt i preview til højre</li>
+                        <li>Klik "Test Fuld Popup" for at se popup i fuld størrelse</li>
+                        <li>Gem kun når du er tilfreds med resultatet</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
                     Popup'en matcher ikke mit design
                     <span>+</span>
                 </div>
                 <div class="faq-answer">
-                    <p><strong>Tilpasning:</strong></p>
+                    <p><strong>Tilpasning med nye funktioner:</strong></p>
                     <ul>
                         <li>Gå til <em>IDguard → Design & Tekster</em></li>
                         <li>Brug farve-vælgerne til at matche dit brand</li>
                         <li>Tilpas tekster til dit tonefald</li>
                         <li>Brug live forhåndsvisningen til at se ændringer</li>
+                        <li>Test på forskellige skærmstørrelser</li>
                     </ul>
                 </div>
             </div>
@@ -1350,7 +1475,7 @@ function idguard_support_page() {
                 </div>
                 
                 <div class="support-info">
-                    <h3><?php _e('Kontakt information', 'idguard'); ?></h3>
+                    <h3 style="color: white;"><?php _e('Kontakt information', 'idguard'); ?></h3>
                     
                     <div class="contact-method">
                         <span class="dashicons dashicons-email-alt"></span>
@@ -1383,7 +1508,7 @@ function idguard_support_page() {
                     
                     <h4><?php _e('Plugin status', 'idguard'); ?></h4>
                     <p>
-                        <strong><?php _e('Version:', 'idguard'); ?></strong> 2.1.1.62<br>
+                        <strong><?php _e('Version:', 'idguard'); ?></strong> 2.1.1.63<br>
                         <strong><?php _e('WooCommerce:', 'idguard'); ?></strong>
                         <?php if (class_exists('WooCommerce')): ?>
                             <span class="status-indicator status-active"><?php _e('Aktiv', 'idguard'); ?></span>
@@ -1483,15 +1608,47 @@ function idguard_get_required_age_for_verification() {
 function idguard_add_product_age_limit_field() {
     $current_value = get_post_meta(get_the_ID(), '_age_limit', true);
     ?>
+    <style>
+    .idguard-product-age-select {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.6em 2em 0.6em 0.8em;
+        font-size: 0.95em;
+        font-weight: 500;
+        color: #1a202c;
+        min-width: 140px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.2em 1.2em;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+    .idguard-product-age-select:hover {
+        border-color: #004cb8;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+        box-shadow: 0 2px 6px rgba(0,76,184,0.1);
+    }
+    .idguard-product-age-select:focus {
+        border-color: #004cb8;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0,76,184,0.15);
+        background: white;
+    }
+    </style>
     <div class="options_group">
         <p class="form-field _age_limit_field">
-            <label for="_age_limit"><?php _e('Aldersgrænse', 'idguard'); ?></label>
-            <select id="_age_limit" name="_age_limit" class="select short">
+            <label for="_age_limit"><?php _e('🔒 Aldersgrænse', 'idguard'); ?></label>
+            <select id="_age_limit" name="_age_limit" class="idguard-product-age-select">
                 <option value=""><?php _e('Ingen aldersgrænse', 'idguard'); ?></option>
-                <option value="15" <?php selected($current_value, '15'); ?>>15+ år</option>
-                <option value="16" <?php selected($current_value, '16'); ?>>16+ år</option>
-                <option value="18" <?php selected($current_value, '18'); ?>>18+ år</option>
-                <option value="21" <?php selected($current_value, '21'); ?>>21+ år</option>
+                <option value="15" <?php selected($current_value, '15'); ?>>🔒 15+ år</option>
+                <option value="16" <?php selected($current_value, '16'); ?>>🔒 16+ år</option>
+                <option value="18" <?php selected($current_value, '18'); ?>>🔒 18+ år</option>
+                <option value="21" <?php selected($current_value, '21'); ?>>🔒 21+ år</option>
             </select>
             <span class="description"><?php _e('Vælg den påkrævede minimumsalder for dette produkt. Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.', 'idguard'); ?></span>
         </p>
@@ -1534,17 +1691,49 @@ add_action('woocommerce_process_product_meta', 'idguard_save_product_age_limit_f
 function idguard_add_category_age_limit_field($term) {
     $age_limit = get_term_meta($term->term_id, '_age_limit', true);
     ?>
+    <style>
+    .idguard-category-age-select {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.6em 2em 0.6em 0.8em;
+        font-size: 0.95em;
+        font-weight: 500;
+        color: #1a202c;
+        min-width: 160px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.2em 1.2em;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+    .idguard-category-age-select:hover {
+        border-color: #004cb8;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+        box-shadow: 0 2px 6px rgba(0,76,184,0.1);
+    }
+    .idguard-category-age-select:focus {
+        border-color: #004cb8;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0,76,184,0.15);
+        background: white;
+    }
+    </style>
     <tr class="form-field">
         <th scope="row" valign="top">
-            <label for="age_limit"><?php _e('Aldersgrænse', 'idguard'); ?></label>
+            <label for="age_limit"><?php _e('🔒 Aldersgrænse', 'idguard'); ?></label>
         </th>
         <td>
-            <select name="age_limit" id="age_limit">
+            <select name="age_limit" id="age_limit" class="idguard-category-age-select">
                 <option value=""><?php _e('Ingen aldersgrænse', 'idguard'); ?></option>
-                <option value="15" <?php selected($age_limit, '15'); ?>>15+ år</option>
-                <option value="16" <?php selected($age_limit, '16'); ?>>16+ år</option>
-                <option value="18" <?php selected($age_limit, '18'); ?>>18+ år</option>
-                <option value="21" <?php selected($age_limit, '21'); ?>>21+ år</option>
+                <option value="15" <?php selected($age_limit, '15'); ?>>🔒 15+ år</option>
+                <option value="16" <?php selected($age_limit, '16'); ?>>🔒 16+ år</option>
+                <option value="18" <?php selected($age_limit, '18'); ?>>🔒 18+ år</option>
+                <option value="21" <?php selected($age_limit, '21'); ?>>🔒 21+ år</option>
             </select>
             <p class="description"><?php _e('Vælg den påkrævede minimumsalder for produkter i denne kategori. Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.', 'idguard'); ?></p>
         </td>

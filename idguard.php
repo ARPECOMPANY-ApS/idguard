@@ -213,162 +213,99 @@ function idguard_settings_page() {
     $current_global_age = get_option('idguard_global_age_limit', '18');
     ?>
     <style>
-    .idguard-admin {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 2em;
-        margin: 1em 0;
-        box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+    .idguard-welcome-banner {
+        background: #004cb8;
+        color: white;
+        padding: 1em 1.5em;
+        border-radius: 6px;
+        margin-bottom: 1.5em;
+        font-size: 1em;
     }
-    .idguard-section {
+    .idguard-admin {
         background: white;
-        border-radius: 8px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
         padding: 1.5em;
         margin: 1em 0;
-        border-left: 4px solid #004cb8;
     }
     .idguard-mode-card {
-        background: white;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 1.5em;
-        margin: 1em 0;
+        background: #f9f9f9;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        padding: 1em;
+        margin: 0.8em 0;
         cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
+        transition: all 0.2s ease;
     }
     .idguard-mode-card:hover {
         border-color: #004cb8;
-        box-shadow: 0 4px 12px rgba(0,76,184,0.1);
     }
     .idguard-mode-card.selected {
         border-color: #004cb8;
         background: #f0f4ff;
-        box-shadow: 0 4px 12px rgba(0,76,184,0.15);
     }
     .idguard-mode-card h3 {
-        margin-top: 0;
-        color: #1a202c;
-        display: flex;
-        align-items: center;
-        gap: 0.5em;
+        margin: 0 0 0.5em 0;
+        color: #333;
+        font-size: 1.1em;
+    }
+    .idguard-mode-card p {
+        margin: 0 0 0.8em 0;
+        color: #666;
+        font-size: 0.95em;
     }
     .idguard-status {
         display: inline-block;
-        padding: 0.3em 0.8em;
-        border-radius: 15px;
-        font-size: 0.8em;
+        padding: 0.2em 0.6em;
+        border-radius: 12px;
+        font-size: 0.75em;
         font-weight: bold;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        margin-left: 0.5em;
     }
     .status-enabled { background: #d4edda; color: #155724; }
     .status-disabled { background: #f8d7da; color: #721c24; }
-    .idguard-preview-btn {
-        background: linear-gradient(135deg, #004cb8 0%, #0066cc 100%);
-        color: white;
-        border: none;
-        padding: 0.8em 1.5em;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 1em;
-        margin-top: 1em;
-        transition: all 0.3s ease;
-    }
-    .idguard-preview-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,76,184,0.3);
-    }
     .idguard-global-age {
         display: none;
         margin-top: 1em;
-        padding: 1em;
-        background: #f8f9fa;
-        border-radius: 6px;
+        padding: 0.8em;
+        background: #f5f5f5;
+        border-radius: 4px;
     }
     .idguard-global-age.show {
         display: block;
-    }
-    .age-input {
-        width: 80px;
-        padding: 0.5em;
-        border: 2px solid #e2e8f0;
-        border-radius: 4px;
-        font-size: 1.1em;
-        text-align: center;
-    }
-    .age-input:focus {
-        border-color: #004cb8;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(0,76,184,0.1);
     }
     .idguard-help-text {
         background: #e8f4fd;
         border-left: 4px solid #004cb8;
         padding: 1em;
         margin: 1em 0;
-        border-radius: 0 6px 6px 0;
+        border-radius: 0 4px 4px 0;
+        font-size: 0.9em;
     }
-    .onboarding-banner {
-        background: linear-gradient(135deg, #004cb8 0%, #0066cc 100%);
-        color: white;
-        padding: 2em;
-        border-radius: 12px;
-        margin-bottom: 2em;
-        text-align: center;
-    }
-    .onboarding-banner h2 {
+    .idguard-help-text h4 {
         margin-top: 0;
-        font-size: 1.8em;
-    }
-    .quick-setup {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1em;
-        margin: 2em 0;
-    }
-    .quick-setup-card {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 1.5em;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-    .quick-setup-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
-    }
-    .quick-setup-card .dashicons {
-        font-size: 2em;
         color: #004cb8;
-        margin-bottom: 0.5em;
+    }
+    .idguard-preview-btn {
+        background: #004cb8;
+        color: white;
+        border: none;
+        padding: 0.7em 1.2em;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+        margin-top: 1em;
+    }
+    .idguard-preview-btn:hover {
+        background: #003a9b;
     }
     </style>
     
     <div class="wrap">
         <?php if (!get_option('idguard_onboarding_completed', false)): ?>
-        <div class="onboarding-banner">
-            <h2>🎉 Velkommen til IDguard!</h2>
-            <p>Opsæt din automatiske aldersverifikation på få minutter. Følg guidene nedenfor for at komme i gang.</p>
-        </div>
-        
-        <div class="quick-setup">
-            <div class="quick-setup-card">
-                <div class="dashicons dashicons-admin-tools"></div>
-                <h3>1. Vælg metode</h3>
-                <p>Beslut hvordan aldersverifikation skal fungere på din webshop</p>
-            </div>
-            <div class="quick-setup-card">
-                <div class="dashicons dashicons-admin-appearance"></div>
-                <h3>2. Tilpas design</h3>
-                <p>Lav popup'en til at matche dit brands farver og beskeder</p>
-            </div>
-            <div class="quick-setup-card">
-                <div class="dashicons dashicons-yes-alt"></div>
-                <h3>3. Test og gå live</h3>
-                <p>Afprøv funktionaliteten og aktiver aldersverifikation</p>
-            </div>
+        <div class="idguard-welcome-banner">
+            <p><strong>🎉 Velkommen til IDguard!</strong> Opsæt automatisk aldersverifikation på få minutter.</p>
         </div>
         <?php endif; ?>
         
@@ -378,9 +315,8 @@ function idguard_settings_page() {
             <form method="post" action="">
                 <?php wp_nonce_field('idguard_general_settings-options'); ?>
                 
-                <div class="idguard-section">
-                    <h2><?php _e('Aldersverifikations-metode', 'idguard'); ?></h2>
-                    <p><?php _e('Vælg hvordan IDguard skal håndtere aldersverifikation på din webshop.', 'idguard'); ?></p>
+                <h2><?php _e('Aldersverifikations-metode', 'idguard'); ?></h2>
+                <p><?php _e('Vælg hvordan IDguard skal håndtere aldersverifikation på din webshop.', 'idguard'); ?></p>
                     
                     <div class="idguard-mode-card <?php echo $current_mode === 'off' ? 'selected' : ''; ?>" data-mode="off">
                         <h3>🔴 Deaktiveret <span class="idguard-status status-disabled">Inaktiv</span></h3>
@@ -417,7 +353,6 @@ function idguard_settings_page() {
                         </div>
                         <?php endif; ?>
                     </div>
-                </div>
                 
                 <div class="idguard-help-text">
                     <h4>💡 Tip til opsætning</h4>
@@ -710,7 +645,7 @@ function idguard_popup_page() {
                     <h2><?php _e('Annullering Indstillinger', 'idguard'); ?></h2>
                     
                     <div class="form-group">
-                        <label for="cancel_redirect"><?php _e('Når kunden annullerer, omledig til:', 'idguard'); ?></label>
+                        <label for="cancel_redirect"><?php _e('Når kunden annullerer alderstjekket, viderestil til:', 'idguard'); ?></label>
                         <select id="cancel_redirect" name="idguard_cancel_redirect_option" onchange="toggleCustomUrl()">
                             <option value="cart" <?php selected($cancel_redirect, 'cart'); ?>><?php _e('Indkøbskurv', 'idguard'); ?></option>
                             <option value="home" <?php selected($cancel_redirect, 'home'); ?>><?php _e('Forside', 'idguard'); ?></option>
@@ -814,23 +749,38 @@ function idguard_popup_page() {
     
     // Add preview popup function for admin
     window.idguardShowPopup = function() {
-        if (typeof showPopup === 'function') {
-            showPopup();
-        } else {
-            // Create a simple admin preview popup
-            var popup = document.createElement('div');
-            popup.innerHTML = `
-                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 2em; border-radius: 8px; max-width: 400px; text-align: center; position: relative;">
-                        <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer;">&times;</button>
-                        <h3>Preview: IDguard Popup</h3>
-                        <p>Dette er hvordan popup'en vil se ud for dine kunder. Klik X for at lukke.</p>
-                        <p style="color: #666; font-size: 0.9em;">Bemærk: Dette er kun en forhåndsvisning. Den faktiske popup indlæser MitID integration.</p>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(popup);
-        }
+        // Create a simple admin preview popup
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999; display: flex; align-items: center; justify-content: center; cursor: pointer;';
+        
+        var popup = document.createElement('div');
+        popup.style.cssText = 'background: white; padding: 2em; border-radius: 8px; max-width: 400px; text-align: center; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.3); cursor: default;';
+        
+        popup.innerHTML = `
+            <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #999; line-height: 1;">&times;</button>
+            <h3 style="margin-top: 0; color: #333;">🎭 Preview: IDguard Popup</h3>
+            <p style="color: #666; margin: 1em 0;">Dette er hvordan popup'en vil se ud for dine kunder.</p>
+            <p style="color: #999; font-size: 0.85em; margin: 0;">Bemærk: Dette er kun en forhåndsvisning. Den faktiske popup indlæser MitID integration.</p>
+        `;
+        
+        overlay.appendChild(popup);
+        document.body.appendChild(overlay);
+        
+        // Close on overlay click
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
+        
+        // Close on escape key
+        var escapeHandler = function(e) {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
     };
     </script>
     <?php

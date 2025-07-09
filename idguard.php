@@ -3,7 +3,7 @@
  * Plugin Name: IDguard
  * Plugin URI: https://idguard.dk
  * Description: Foretag automatisk alderstjek med MitID ved betaling på WooCommerce-webshops
- * Version: 2.1.1.63
+ * Version: 2.1.1.64
  * Author: IDguard
  * Author URI: https://idguard.dk
  * Text Domain: idguard
@@ -133,7 +133,7 @@ add_action('wp_enqueue_scripts', 'idguard_init');
 // --- Admin-menu ---
 function idguard_add_admin_menu() {
     add_menu_page(
-        __('Indstillinger', 'idguard'),
+        __('Konfigurer IDguard', 'idguard'),
         __('IDguard', 'idguard'),
         'manage_options',
         'idguard',
@@ -335,7 +335,6 @@ function idguard_settings_page() {
         padding: 0.5em;
         font-weight: 500;
     }
-    }
     </style>
     
     <div class="wrap">
@@ -346,7 +345,7 @@ function idguard_settings_page() {
         <?php endif; ?>
         
         <div class="idguard-admin">
-            <h1><span style="color:#004cb8;">⛨</span> <?php _e('IDguard Indstillinger', 'idguard'); ?></h1>
+            <h1><span style="color:#004cb8;">IDguard</span> <?php _e('Indstillinger', 'idguard'); ?></h1>
             
             <form method="post" action="">
                 <?php wp_nonce_field('idguard_general_settings-options'); ?>
@@ -355,30 +354,30 @@ function idguard_settings_page() {
                 <p><?php _e('Vælg hvordan IDguard skal håndtere aldersverifikation på din webshop.', 'idguard'); ?></p>
                     
                     <div class="idguard-mode-card <?php echo $current_mode === 'off' ? 'selected' : ''; ?>" data-mode="off">
-                        <h3>🔴 Deaktiveret <span class="idguard-status status-disabled">Inaktiv</span></h3>
+                        <h3>Deaktiveret <span class="idguard-status status-disabled">Inaktiv</span></h3>
                         <p>Ingen aldersverifikation. Alle kunder kan gennemføre køb uden begrænsninger.</p>
                         <input type="radio" name="idguard_age_verification_mode" value="off" <?php checked($current_mode, 'off'); ?> style="margin-top: 1em;">
                     </div>
                     
                     <div class="idguard-mode-card <?php echo $current_mode === 'global' ? 'selected' : ''; ?>" data-mode="global">
-                        <h3>🌐 Global aldersgrænse <span class="idguard-status status-enabled">Aktiv</span></h3>
+                        <h3>Global aldersgrænse <span class="idguard-status status-enabled">Aktiv</span></h3>
                         <p>Alle produkter på webshop'en kræver samme aldersverifikation. Enkel opsætning.</p>
                         <input type="radio" name="idguard_age_verification_mode" value="global" <?php checked($current_mode, 'global'); ?> style="margin-top: 1em;">
                         
                         <div class="idguard-global-age <?php echo $current_mode === 'global' ? 'show' : ''; ?>">
                             <label><strong>Minimum alder:</strong></label>
                             <select name="idguard_global_age_limit" class="idguard-age-select">
-                                <option value="15" <?php selected($current_global_age, '15'); ?>>🔒 15 år</option>
-                                <option value="16" <?php selected($current_global_age, '16'); ?>>🔒 16 år</option>
-                                <option value="18" <?php selected($current_global_age, '18'); ?>>🔒 18 år</option>
-                                <option value="21" <?php selected($current_global_age, '21'); ?>>🔒 21 år</option>
+                                <option value="15" <?php selected($current_global_age, '15'); ?>>15 år</option>
+                                <option value="16" <?php selected($current_global_age, '16'); ?>>16 år</option>
+                                <option value="18" <?php selected($current_global_age, '18'); ?>>18 år</option>
+                                <option value="21" <?php selected($current_global_age, '21'); ?>>21 år</option>
                             </select>
                             <p style="font-size: 0.9em; color: #666; margin-top: 0.5em;">Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.</p>
                         </div>
                     </div>
                     
                     <div class="idguard-mode-card <?php echo $current_mode === 'individual' ? 'selected' : ''; ?>" data-mode="individual">
-                        <h3>🎯 Individuelle aldersgrænser <span class="idguard-status status-enabled">Avanceret</span></h3>
+                        <h3>Individuelle aldersgrænser <span class="idguard-status status-enabled">Avanceret</span></h3>
                         <p>Sæt forskellige aldersgrænser på produkter og kategorier. Fuld kontrol over hvad der kræver verifikation.</p>
                         <input type="radio" name="idguard_age_verification_mode" value="individual" <?php checked($current_mode, 'individual'); ?> style="margin-top: 1em;">
                         
@@ -391,13 +390,22 @@ function idguard_settings_page() {
                     </div>
                 
                 <div class="idguard-help-text">
-                    <h4>💡 Tip til opsætning</h4>
+                    <h4>Tip til opsætning</h4>
                     <ul>
                         <li><strong>Global:</strong> Vælg denne hvis alle dine produkter kræver samme aldersverifikation</li>
                         <li><strong>Individuel:</strong> Vælg denne hvis du har blandede produkter med forskellige alderskrav</li>
                         <li><strong>API begrænsning:</strong> Kun 15, 16, 18 og 21 år er tilgængelige via MitID API</li>
                         <li><strong>Test altid:</strong> Brug preview-funktionen til at teste før du aktiverer</li>
                     </ul>
+                </div>
+                
+                <?php submit_button(__('Gem indstillinger', 'idguard'), 'primary large', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;margin-top:2em;')); ?>
+            </form>
+            
+            <div style="margin-top: 2em; text-align: center;">
+                <button onclick="idguardShowPopup()" class="idguard-preview-btn">Forhåndsvis popup</button>
+                <p style="color:#666; font-size:0.9em; margin-top:0.5em;">Test hvordan popup'en vil se ud for dine kunder</p>
+            </div>
                 </div>
                 
                 <?php submit_button(__('Gem indstillinger', 'idguard'), 'primary large', 'submit', true, array('style' => 'font-size:1.2em;padding:0.7em 2em;background:#004cb8;border-radius:5px;border:none;margin-top:2em;')); ?>
@@ -639,7 +647,7 @@ function idguard_popup_page() {
     </style>
     
     <div class="wrap">
-        <h1><span style="color:#004cb8;">🎨</span> <?php _e('IDguard Popup Design & Tekster', 'idguard'); ?></h1>
+        <h1><span style="color:#004cb8;">IDguard</span> <?php _e('Popup Design & Tekster', 'idguard'); ?></h1>
         
         <div class="idguard-popup-admin">
             <div class="idguard-form-section">
@@ -647,7 +655,7 @@ function idguard_popup_page() {
                     <?php wp_nonce_field('idguard_popup_settings-options'); ?>
                     
                     <div class="form-section">
-                        <h3>✏️ <?php _e('Popup Tekster', 'idguard'); ?></h3>
+                        <h3><?php _e('Popup Tekster', 'idguard'); ?></h3>
                         
                         <div class="form-group">
                             <label for="popup_title"><?php _e('Popup Titel', 'idguard'); ?></label>
@@ -671,7 +679,7 @@ function idguard_popup_page() {
                     </div>
                     
                     <div class="form-section">
-                        <h3>🎨 <?php _e('Popup Farver', 'idguard'); ?></h3>
+                        <h3><?php _e('Popup Farver', 'idguard'); ?></h3>
                         
                         <div class="form-group">
                             <label for="text_color"><?php _e('Tekst Farve', 'idguard'); ?></label>
@@ -723,14 +731,14 @@ function idguard_popup_page() {
                     </div>
                     
                     <div class="form-section">
-                        <h3>🔀 <?php _e('Annullering Indstillinger', 'idguard'); ?></h3>
+                        <h3><?php _e('Annullering Indstillinger', 'idguard'); ?></h3>
                         
                         <div class="form-group">
                             <label for="cancel_redirect"><?php _e('Når kunden annullerer alderstjekket, viderestil til:', 'idguard'); ?></label>
                             <select id="cancel_redirect" name="idguard_cancel_redirect_option" onchange="toggleCustomUrl()">
-                                <option value="cart" <?php selected($cancel_redirect, 'cart'); ?>><?php _e('🛒 Indkøbskurv', 'idguard'); ?></option>
-                                <option value="home" <?php selected($cancel_redirect, 'home'); ?>><?php _e('🏠 Forside', 'idguard'); ?></option>
-                                <option value="custom" <?php selected($cancel_redirect, 'custom'); ?>><?php _e('🔗 Brugerdefineret URL', 'idguard'); ?></option>
+                                <option value="cart" <?php selected($cancel_redirect, 'cart'); ?>><?php _e('Indkøbskurv', 'idguard'); ?></option>
+                                <option value="home" <?php selected($cancel_redirect, 'home'); ?>><?php _e('Forside', 'idguard'); ?></option>
+                                <option value="custom" <?php selected($cancel_redirect, 'custom'); ?>><?php _e('Brugerdefineret URL', 'idguard'); ?></option>
                             </select>
                             
                             <div class="custom-url-field <?php echo $cancel_redirect === 'custom' ? 'show' : ''; ?>">
@@ -749,13 +757,13 @@ function idguard_popup_page() {
                         </div>
                     </div>
                     
-                    <?php submit_button(__('💾 Gem Design Indstillinger', 'idguard'), 'primary large', 'submit', true, array('style' => 'font-size:1.1em;padding:0.8em 2em;background:#004cb8;border-radius:6px;border:none;margin-top:1.5em;')); ?>
+                    <?php submit_button(__('Gem Design Indstillinger', 'idguard'), 'primary large', 'submit', true, array('style' => 'font-size:1.1em;padding:0.8em 2em;background:#004cb8;border-radius:6px;border:none;margin-top:1.5em;')); ?>
                 </form>
             </div>
             
             <div class="idguard-preview-section">
                 <div class="preview-header">
-                    <h3>👁️ <?php _e('Live Forhåndsvisning', 'idguard'); ?></h3>
+                    <h3><?php _e('Live Forhåndsvisning', 'idguard'); ?></h3>
                     <p><?php _e('Se hvordan popup\'en vil se ud for dine kunder', 'idguard'); ?></p>
                 </div>
                 
@@ -769,7 +777,7 @@ function idguard_popup_page() {
                 </div>
                 
                 <div style="margin-top: 1.5em; text-align: center;">
-                    <button onclick="idguardShowPopup()" class="button button-primary"><?php _e('🚀 Test Fuld Popup', 'idguard'); ?></button>
+                    <button onclick="idguardShowPopup()" class="button button-primary"><?php _e('Test Fuld Popup', 'idguard'); ?></button>
                     <p style="color:#666; font-size:0.8em; margin-top:0.5em;"><?php _e('Åbn popup i fuld størrelse', 'idguard'); ?></p>
                 </div>
             </div>
@@ -833,19 +841,111 @@ function idguard_popup_page() {
     
     // Add preview popup function for admin
     window.idguardShowPopup = function() {
-        // Create a simple admin preview popup
+        // Get current settings
+        const title = document.getElementById('popup_title').value || 'Din ordre indeholder aldersbegrænsede varer';
+        const message = document.getElementById('popup_message').value || 'Den danske lovgivning kræver at vi kontrollerer din alder med MitID inden du kan købe aldersbegrænsede varer.';
+        const confirmText = document.getElementById('confirm_button').value || 'Fortsæt købet';
+        const cancelText = document.getElementById('cancel_button').value || 'Gå tilbage';
+        const textColor = document.getElementById('text_color').value || '#000000';
+        const bgColor = document.getElementById('bg_color').value || '#ffffff';
+        const verifyBtnColor = document.getElementById('verify_btn_color').value || '#004cb8';
+        const verifyBtnTextColor = document.getElementById('verify_btn_text_color').value || '#ffffff';
+        const cancelBtnColor = document.getElementById('cancel_btn_color').value || '#d6d6d6';
+        const cancelBtnTextColor = document.getElementById('cancel_btn_text_color').value || '#000000';
+        
+        // Create exact popup replica
         var overlay = document.createElement('div');
-        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999; display: flex; align-items: center; justify-content: center; cursor: pointer;';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(2px);';
         
         var popup = document.createElement('div');
-        popup.style.cssText = 'background: white; padding: 2em; border-radius: 8px; max-width: 400px; text-align: center; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.3); cursor: default;';
-        
-        popup.innerHTML = `
-            <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #999; line-height: 1;">&times;</button>
-            <h3 style="margin-top: 0; color: #333;">🎭 Preview: IDguard Popup</h3>
-            <p style="color: #666; margin: 1em 0;">Dette er hvordan popup'en vil se ud for dine kunder.</p>
-            <p style="color: #999; font-size: 0.85em; margin: 0;">Bemærk: Dette er kun en forhåndsvisning. Den faktiske popup indlæser MitID integration.</p>
+        popup.style.cssText = `
+            background: ${bgColor}; 
+            color: ${textColor};
+            padding: 2.5em 2em; 
+            border-radius: 16px; 
+            max-width: 420px; 
+            width: 90%; 
+            text-align: center; 
+            position: relative; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15); 
+            cursor: default;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         `;
+        
+        var closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.style.cssText = 'position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999; line-height: 1; opacity: 0.7; transition: opacity 0.2s;';
+        closeBtn.onmouseover = function() { this.style.opacity = '1'; };
+        closeBtn.onmouseout = function() { this.style.opacity = '0.7'; };
+        closeBtn.onclick = function() { overlay.remove(); };
+        
+        var titleEl = document.createElement('h2');
+        titleEl.textContent = title;
+        titleEl.style.cssText = `margin: 0 0 1em 0; font-size: 1.4em; font-weight: 600; color: ${textColor}; line-height: 1.3;`;
+        
+        var messageEl = document.createElement('p');
+        messageEl.textContent = message;
+        messageEl.style.cssText = `margin: 0 0 2em 0; font-size: 1em; line-height: 1.5; color: ${textColor}; opacity: 0.9;`;
+        
+        var buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = 'display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;';
+        
+        var confirmBtn = document.createElement('button');
+        confirmBtn.textContent = confirmText;
+        confirmBtn.style.cssText = `
+            background: ${verifyBtnColor}; 
+            color: ${verifyBtnTextColor}; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            font-size: 1em; 
+            font-weight: 500; 
+            cursor: pointer; 
+            min-width: 140px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        `;
+        confirmBtn.onmouseover = function() { 
+            this.style.transform = 'translateY(-1px)'; 
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+        };
+        confirmBtn.onmouseout = function() { 
+            this.style.transform = 'translateY(0)'; 
+            this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        };
+        
+        var cancelBtn = document.createElement('button');
+        cancelBtn.textContent = cancelText;
+        cancelBtn.style.cssText = `
+            background: ${cancelBtnColor}; 
+            color: ${cancelBtnTextColor}; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            font-size: 1em; 
+            font-weight: 500; 
+            cursor: pointer; 
+            min-width: 140px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        `;
+        cancelBtn.onmouseover = function() { 
+            this.style.transform = 'translateY(-1px)'; 
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+        };
+        cancelBtn.onmouseout = function() { 
+            this.style.transform = 'translateY(0)'; 
+            this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        };
+        cancelBtn.onclick = function() { overlay.remove(); };
+        
+        buttonContainer.appendChild(confirmBtn);
+        buttonContainer.appendChild(cancelBtn);
+        
+        popup.appendChild(closeBtn);
+        popup.appendChild(titleEl);
+        popup.appendChild(messageEl);
+        popup.appendChild(buttonContainer);
         
         overlay.appendChild(popup);
         document.body.appendChild(overlay);
@@ -992,7 +1092,7 @@ function idguard_documentation_page() {
     </style>
     
     <div class="wrap">
-        <h1>📖 <?php _e('IDguard Dokumentation & Hjælp', 'idguard'); ?></h1>
+        <h1><?php _e('IDguard Dokumentation & Hjælp', 'idguard'); ?></h1>
         
         <div class="idguard-docs">
             <div class="alert-box alert-info">
@@ -1426,7 +1526,7 @@ function idguard_support_page() {
     </style>
     
     <div class="wrap">
-        <h1>🛟 <?php _e('IDguard Kundeservice', 'idguard'); ?></h1>
+        <h1><?php _e('IDguard Kundeservice', 'idguard'); ?></h1>
         
         <div class="idguard-support">
             <div style="text-align: center; margin-bottom: 2em;">
@@ -1642,13 +1742,13 @@ function idguard_add_product_age_limit_field() {
     </style>
     <div class="options_group">
         <p class="form-field _age_limit_field">
-            <label for="_age_limit"><?php _e('🔒 Aldersgrænse', 'idguard'); ?></label>
+            <label for="_age_limit"><?php _e('Aldersgrænse', 'idguard'); ?></label>
             <select id="_age_limit" name="_age_limit" class="idguard-product-age-select">
                 <option value=""><?php _e('Ingen aldersgrænse', 'idguard'); ?></option>
-                <option value="15" <?php selected($current_value, '15'); ?>>🔒 15+ år</option>
-                <option value="16" <?php selected($current_value, '16'); ?>>🔒 16+ år</option>
-                <option value="18" <?php selected($current_value, '18'); ?>>🔒 18+ år</option>
-                <option value="21" <?php selected($current_value, '21'); ?>>🔒 21+ år</option>
+                <option value="15" <?php selected($current_value, '15'); ?>>15+ år</option>
+                <option value="16" <?php selected($current_value, '16'); ?>>16+ år</option>
+                <option value="18" <?php selected($current_value, '18'); ?>>18+ år</option>
+                <option value="21" <?php selected($current_value, '21'); ?>>21+ år</option>
             </select>
             <span class="description"><?php _e('Vælg den påkrævede minimumsalder for dette produkt. Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.', 'idguard'); ?></span>
         </p>
@@ -1725,15 +1825,15 @@ function idguard_add_category_age_limit_field($term) {
     </style>
     <tr class="form-field">
         <th scope="row" valign="top">
-            <label for="age_limit"><?php _e('🔒 Aldersgrænse', 'idguard'); ?></label>
+            <label for="age_limit"><?php _e('Aldersgrænse', 'idguard'); ?></label>
         </th>
         <td>
             <select name="age_limit" id="age_limit" class="idguard-category-age-select">
                 <option value=""><?php _e('Ingen aldersgrænse', 'idguard'); ?></option>
-                <option value="15" <?php selected($age_limit, '15'); ?>>🔒 15+ år</option>
-                <option value="16" <?php selected($age_limit, '16'); ?>>🔒 16+ år</option>
-                <option value="18" <?php selected($age_limit, '18'); ?>>🔒 18+ år</option>
-                <option value="21" <?php selected($age_limit, '21'); ?>>🔒 21+ år</option>
+                <option value="15" <?php selected($age_limit, '15'); ?>>15+ år</option>
+                <option value="16" <?php selected($age_limit, '16'); ?>>16+ år</option>
+                <option value="18" <?php selected($age_limit, '18'); ?>>18+ år</option>
+                <option value="21" <?php selected($age_limit, '21'); ?>>21+ år</option>
             </select>
             <p class="description"><?php _e('Vælg den påkrævede minimumsalder for produkter i denne kategori. Kun 15, 16, 18 og 21 år er tilgængelige via MitID API.', 'idguard'); ?></p>
         </td>

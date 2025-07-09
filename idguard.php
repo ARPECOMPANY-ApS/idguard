@@ -127,6 +127,19 @@ function idguard_init() {
         'customization' => $customization,
         'isOrderReceivedPage' => $is_order_received
     ]);
+
+// Fallback: Define if missing
+if (!function_exists('idguard_get_required_age_for_verification')) {
+    function idguard_get_required_age_for_verification() {
+        // Return global age limit or default to 18
+        $age = get_option('idguard_global_age_limit', '18');
+        $allowed_ages = array('15', '16', '18', '21');
+        if (!in_array($age, $allowed_ages)) {
+            $age = '18';
+        }
+        return $age;
+    }
+}
 }
 add_action('wp_enqueue_scripts', 'idguard_init');
 
